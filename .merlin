@@ -1,0 +1,7 @@
+S .
+B _build/src
+PKG core
+PKG lwt
+PKG cohttp
+
+
