@@ -52,26 +52,53 @@ let handler ~body:_ _sock req =
   | "/test" ->
       extract req
       |> (fun x -> match x with
-          | Some x -> print_endline x
+          | Some x -> (* print_endline x *) x 
             |> fun _ ->
             Server.respond_with_string "bye\n"
-            (* Cohttp_async.Server.close _sock *)
-            (* |> (fun _ ->  Server.respond_with_string "home") *)
+
           | _ -> Server.respond_with_string "default \n"
           (* | None -> Server.respond_with_string "None" *))
   | _ ->
     Server.respond_with_string ~code:`Not_found "Route not found\n"
   (* | _ -> return None *)
-
 let start_server port () =
   eprintf "Listening for HTTP on port %d\n" port;
   eprintf "Try 'curl http://localhost:%d/test?hello=xyz'\n%!" port;
-  (* let server = *)
+  (* Cohttp_async.Request. *)
+  let param = ref false in
+  let inet = ref None in
   Cohttp_async.Server.create ~on_handler_error:`Raise
-    (Tcp.on_port port) handler
+    (Tcp.on_port port)
+    (fun ~body:_ _sock req ->
+       let uri = Cohttp.Request.uri req in
+       match Uri.path uri with
+       | "/test" ->
+         extract req
+         |> (fun x ->
+             match !inet with
+             | None -> Server.respond_with_string "none"
+             | Some y -> Cohttp_async.Server.close y
+                         |> fun _ -> Server.respond_with_string "bye\n"
 
+             (* match x with *)
+             (* | Some x -> (\* (param := true) *\) *)
+             (*   match !inet with *)
+             (*   | None -> Server.respond_with_string "no addr" *)
+             (*   | Some s -> Cohttp_async.Server.close addr; *)
+             (*   (\* Cohttp_async.Server.close _sock *\) *)
+             (*               |> fun _ -> *)
+             (*               Server.respond_with_string "bye\n" *)
+
+             | _ -> Server.respond_with_string "default \n"
+             (* | None -> Server.respond_with_string "None" *))
+       | _ ->
+         Server.respond_with_string ~code:`Not_found "Route not found\n")
   (* >>= fun addr -> Cohttp_async.Server.close addr *)
-  >>= fun _ -> let dd = print_endline "bye"
+  >>= fun addr -> let dd = (* print_endline "hiu" *)
+                    inet := Some addr;
+                    match !param with
+                    | true -> print_endline "working"
+                    | false -> print_endline "not working"
   in
   Deferred.never
     dd
