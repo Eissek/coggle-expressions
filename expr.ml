@@ -9,14 +9,14 @@ open Cohttp_async
 
 let extract req =
   let uri = Cohttp.Request.uri req in
-  match Uri.get_query_param uri "hello" with
-  | Some(hello) -> if hello = "" then  None else Some hello
+  match Uri.get_query_param uri "code" with
+  | Some(code) -> if code = "" then  None else Some code
   | None -> None
 
 
 let start_server port () =
   eprintf "Listening for HTTP on port %d\n" port;
-  eprintf "Try 'curl http://localhost:%d/test?hello=xyz'\n%!" port;
+  eprintf "Try 'curl http://localhost:%d/test?code=xyz'\n%!" port;
   let param = ref false in
   let inet_addr = ref None in
   Cohttp_async.Server.create ~on_handler_error:`Raise
@@ -30,7 +30,10 @@ let start_server port () =
              match !inet_addr with
              | None -> Server.respond_with_string "inet address not found"
              | Some y -> Cohttp_async.Server.close y
-                         |> fun _ -> Server.respond_with_string "bye\n")
+                         |> fun _ ->
+                         print_endline "Received Authorization code";
+                         print_endline "Closing server";
+                         Server.respond_with_string "Received Authorization code \n")
        | _ -> Server.respond_with_string ~code:`Not_found "Route not found\n"
     )
   >>= fun addr -> let set_inet =
