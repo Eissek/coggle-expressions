@@ -7,16 +7,41 @@ open Cohttp_async
 (* open Cohttp_lwt_unix *)
 
 
+(* let response_handler code = *)
+(*   let token_url = "https://coggle.it/token?code=" ^ code ^  *)
+
+(* let get_secret = *)
+(*   let contents = Reader.file_contents "../moonlandings.txt" *)
+(*       in let d = contents in d in  *)
+(*               match (contents |> fun _ -> Deferred.peek contents) with *)
+(*               | None -> "" *)
+(*               | Some x ->  x *)
+let get_secret  = In_channel.read_all "../moonlandings.txt"
+                    |> String.strip
+(* let enc = B64.encode "hehehehe";; *)
+let create_auth =
+  let client_id = "5748885591ce2c8246852e66" in
+  let auth = client_id ^ get_secret in
+  let enc = B64.encode auth in
+  let auth_headers = ["Authorization", "Basic " ^ enc] in
+  auth_headers
+let get_token =
+  let headers = Header.of_list create_auth in
+  Cohttp_async.Client.post ~headers:
+
 let extract req =
   let uri = Cohttp.Request.uri req in
   match Uri.get_query_param uri "code" with
-  | Some(code) -> if code = "" then  None else Some code
+  | Some(code) -> if code = "" then
+      None else printf "Code: %s \n" get_secret |> fun _ ->  Some code
   | None -> None
 
-
+(* Cohttp_async.Client.get *)
 let start_server port () =
   eprintf "Listening for HTTP on port %d\n" port;
-  eprintf "Try 'curl http://localhost:%d/test?code=xyz'\n%!" port;
+  eprintf "Try 'curl http://localhost:%d/coggle?code=xyz'\n%!" port;
+  print_endline "Enter the following url to your browser:";
+  print_endline "https://coggle.it/dialog/authorize?response_type=code&scope=read write&client_id=5748885591ce2c8246852e66&redirect_uri=http://localhost:8080/coggle";
   let param = ref false in
   let inet_addr = ref None in
   Cohttp_async.Server.create ~on_handler_error:`Raise
@@ -24,7 +49,7 @@ let start_server port () =
     (fun ~body: _ _sock req ->
        let uri = Cohttp.Request.uri req in
        match Uri.path uri with
-       | "/test" ->
+       | "/coggle" ->
          extract req
            |> (fun _ ->
              match !inet_addr with
