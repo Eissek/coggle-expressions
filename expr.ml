@@ -22,36 +22,20 @@ let get_secret  = In_channel.read_all "../moonlandings.txt"
 let create_auth =
   let client_id = "5748885591ce2c8246852e66" in
   let auth = client_id ^ ":" ^ get_secret in
-  (* let auth = get_secret in *)
-  (* let auth =  get_secret ^ ":" ^ client_id in *)
-  (* let auth = client_id ^ get_secret in *)
-  (* let auth = "client_id=" ^ client_id ^ "&client_secret" ^ get_secret in *)
   let enc = B64.encode auth in
   let auth_headers = ["Authorization", "Basic " ^ enc] in
   auth_headers
 
 let generate_uri code =
-  (* let uri = Uri.of_string ("https://coggle.it/token?code=" ^ code *)
-  (*                          ^ "&client_id=" ^ get_id ^ "&client_secret=" ^ get_secret ^ *)
-  (*                          "&grant_type=authorization_code&redirect_uri=http://localhost:8080/coggle" ) in *)
-  (* uri *)
   let uri = Uri.of_string "https://coggle.it/token" in
   Uri.add_query_params uri[
     ("code", [code]);
-    (* ("client_id", [get_id]); *)
-    (* ("client_secret", [(B64.encode get_secret )]); *)
     ("grant_type", ["authorization_code"]);
     ("redirect_uri", ["http://localhost:8080/coggle"])]
 
-(* ("client_id", [B64.encode get_id]); *)
-    (* ("client_secret", [B64.encode get_secret]); *)
 
-(* Cohttp.Header.init_with *)
 let get_token code =
-  (* let client_id = "5748885591ce2c8246852e66" in *)
-  (* let headers = Cohttp.Header.init_with "Authorization" ("Basic " ^ B64.encode (client_id ^ ":" ^ get_secret)) in *)
   let headers = (Cohttp.Header.of_list create_auth) in
-  let uri = generate_uri code in
   Cohttp_async.Client.post_form
     ~headers: headers
     ~params:[("code", [code]);
@@ -88,7 +72,6 @@ let extract req =
       |> fun _ -> Some code
   | None -> None
 
-(* Cohttp_async.Client.get *)
 let start_server port () =
   eprintf "Listening for HTTP on port %d\n" port;
   eprintf "Try 'curl http://localhost:%d/coggle?code=xyz'\n%!" port;
