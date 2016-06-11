@@ -22,11 +22,14 @@ let get_secret  = In_channel.read_all "../moonlandings.txt"
 
 let tkn = ref ""
 
-let parse_token str  =
+let parse_token str =
   let json = Yojson.Basic.from_string str in
   let open Yojson.Basic.Util in
   let tkn = json |> member "access_token" |> to_string in
-  print_endline ("Tkn: " ^ tkn)
+  (* print_endline ("Tkn: " ^ tkn) *)
+  (* printf "Tkn: %s\n" tkn *)
+  tkn
+
 
 let create_auth =
   let client_id = "5748885591ce2c8246852e66" in
@@ -55,7 +58,7 @@ let get_token code =
     Cohttp_async.Body.to_string body
     >>= fun b ->
     (* printf "yup:  %s\n" b; *)
-    parse_token b;
+    parse_token b |> print_endline;
     return body
   (* Cohttp_async.Client.post ~headers:headers uri *)
   (*   >>= fun (_, body) -> *)
