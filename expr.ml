@@ -31,12 +31,33 @@ let new_diagram title =
   >>= fun (_, body) ->
   Cohttp_async.Body.to_string body
   >>= fun b -> print_endline b;
-  return body
+  (* return body *)
+  return b
   (* >>= fun data -> print_endline data; *)
   (* return data *)
 
 
-(* let input_data *)
+(* let input_data_commandline *)
+(* let parse data = *)
+
+let parent_id data  =
+  let json = Yojson.Basic.from_string data in
+  let open Yojson.Basic.Util in
+  json |> member "_id" |> to_string
+
+
+let add_branch parent text x y =
+  let uri = Uri.of_string "https://coggle.it/api/1/diagrams/:diagram/nodes" in
+      Cohttp_async.Client.post_form
+      ~params: [("parent", [parent]);
+                ("text", [text]);
+                ("x", [x]);
+                ("y", [y])]
+      uri
+      >>= fun (_, body) ->
+      Cohttp_async.Body.to_string body
+      >>= fun b -> print_endline b;
+      return body
 
 let parse_token str =
   let json = Yojson.Basic.from_string str in
@@ -80,6 +101,12 @@ let get_token code =
     tkn := tk;
     print_endline ("set: " ^ !tkn);
     new_diagram "testing"
+    >>= fun (diagram) ->
+    parent_id diagram
+    (* |> parent_id *)
+    (* >>= fun diagram -> parent_id diagram *)
+    |> fun id ->
+    add_branch id "does this work" "32" "10"
     (* return body *)
 
 
