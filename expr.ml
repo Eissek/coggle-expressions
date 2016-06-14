@@ -22,6 +22,22 @@ let get_secret  = In_channel.read_all "../moonlandings.txt"
 
 let tkn = ref ""
 
+let new_diagram title =
+  let uri = Uri.of_string "https://coggle.it/api/1/diagrams" in
+  Cohttp_async.Client.post_form
+    ~params: [("access_token", [!tkn]);
+              ("title", [title])]
+    uri
+  >>= fun (_, body) ->
+  Cohttp_async.Body.to_string body
+  >>= fun b -> print_endline b;
+  return body
+  (* >>= fun data -> print_endline data; *)
+  (* return data *)
+
+
+(* let input_data *)
+
 let parse_token str =
   let json = Yojson.Basic.from_string str in
   let open Yojson.Basic.Util in
@@ -58,18 +74,13 @@ let get_token code =
     Cohttp_async.Body.to_string body
     >>= fun b ->
     (* printf "yup:  %s\n" b; *)
-    parse_token b |> print_endline;
-    return body
-  (* Cohttp_async.Client.post ~headers:headers uri *)
-  (*   >>= fun (_, body) -> *)
-  (*   Cohttp_async.Body.to_string body *)
-  (*   >>= fun b -> *)
-  (*   printf "yup:  %s\n" b; *)
-  (*   return body *)
-    (* let d = Deferred.peek body in *)
-    (* match d with *)
-    (* | None -> None *)
-    (* | Some x -> Some x *)
+    (* parse_token b |> print_endline; *)
+    parse_token b
+    |> fun tk ->
+    tkn := tk;
+    print_endline ("set: " ^ !tkn);
+    new_diagram "testing"
+    (* return body *)
 
 
 let extract req =
