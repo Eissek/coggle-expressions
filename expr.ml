@@ -30,7 +30,7 @@ let new_diagram title =
     uri
   >>= fun (_, body) ->
   Cohttp_async.Body.to_string body
-  >>= fun b -> print_endline b;
+  >>= fun b -> print_endline ("Diagram: " ^ b);
   (* return body *)
   return b
   (* >>= fun data -> print_endline data; *)
@@ -40,24 +40,80 @@ let new_diagram title =
 (* let input_data_commandline *)
 (* let parse data = *)
 
-let parent_id data  =
+
+let get_all_nodes diagram =
+  let uri = Uri.of_string ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn) in
+  Cohttp_async.Client.get uri
+    >>= fun (_, body) ->
+    Cohttp_async.Body.to_string body
+    >>= fun b ->
+    print_endline ("NODES: " ^ b);
+    return b
+    (* return body (\* was body *\) *)
+
+let get_json_id data =
   let json = Yojson.Basic.from_string data in
   let open Yojson.Basic.Util in
   json |> member "_id" |> to_string
 
 
-let add_branch parent text x y =
-  let uri = Uri.of_string "https://coggle.it/api/1/diagrams/:diagram/nodes" in
-      Cohttp_async.Client.post_form
-      ~params: [("parent", [parent]);
-                ("text", [text]);
-                ("x", [x]);
-                ("y", [y])]
-      uri
-      >>= fun (_, body) ->
-      Cohttp_async.Body.to_string body
-      >>= fun b -> print_endline b;
-      return body
+(* let add_branch parent text x y = *)
+(*   let uri = Uri.of_string *)
+(*       ("https://coggle.it/api/1/diagrams/" ^ parent ^ "/nodes") in *)
+(*   let js = `Assoc [ ("x", `String "12"); ("y", `String "43") ] in *)
+(*   Cohttp_async.Client.post_form *)
+(*     ~params: [("access_token", [!tkn]); *)
+(*               ("offset",  ["[x: 5, y: 4]"]); *)
+(*               (\* ("offset",  [("x", x) ("y", y)]) *\) *)
+(*               (\* ("x", [x]); *\) *)
+(*               (\* ("y", [y]); *\) *)
+(*               ("text", [text]); *)
+(*               ("parent", [parent])] *)
+(*     uri *)
+(*       >>= fun (_, body) -> *)
+(*       Cohttp_async.Body.to_string body *)
+(*       >>= fun b -> print_endline b; *)
+(*       return body *)
+
+
+(* Cohttp_async.Body.of_string *)
+
+let add_branch parent diagram text x y =
+  let headers = Cohttp.Header.of_list [("content-type", "application/json")] in
+  let uri = Uri.of_string
+      ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn)
+  in
+  let data  = `Assoc [("offset", `Assoc [("x", `Int 12); ("y", `Int 20)]);
+                      ("text", `String text);
+                      ("parent", `String parent)] in
+  let main_body = Cohttp_async.Body.of_string (Yojson.Basic.to_string data)  in
+  Cohttp_async.Client.post
+    ~headers: headers
+    ~body:main_body
+    uri
+    >>= fun (_, body) ->
+    Cohttp_async.Body.to_string body
+    >>= fun b -> print_endline b;
+    return body
+
+(* Yojson.Basic. *)
+
+(* let add_branch parent text x y = *)
+(*   let uri = Uri.of_string *)
+(*       ("https://coggle.it/api/1/diagrams/:diagram/nodes?access_token=" ^ !tkn ^ "&parent=" ^ parent) in *)
+(*   Cohttp_async.Client.post_form *)
+(*     ~params: [(\* ("access_token", [!tkn]); *\) *)
+(*               ("x", [x]); *)
+(*               ("y", [y]); *)
+(*               ("text", [text]); *)
+(*               (\* ("parent", [parent]) *\)] *)
+(*     uri *)
+(*       >>= fun (_, body) -> *)
+(*       Cohttp_async.Body.to_string body *)
+(*       >>= fun b -> print_endline b; *)
+(*       return body *)
+
+
 
 let parse_token str =
   let json = Yojson.Basic.from_string str in
@@ -101,13 +157,16 @@ let get_token code =
     tkn := tk;
     print_endline ("set: " ^ !tkn);
     new_diagram "testing"
-    >>= fun (diagram) ->
-    parent_id diagram
-    (* |> parent_id *)
-    (* >>= fun diagram -> parent_id diagram *)
+    >>= fun (diagram_data) ->
+    let diagram_id = get_json_id diagram_data in (* returns string id *)
+    get_all_nodes diagram_id
+    >>= fun nodes ->
+    (* print_endline ("MY NODES: " ^ nodes); *)
+    String.slice nodes 1 (String.length nodes - 1)
+    |> get_json_id
     |> fun id ->
-    add_branch id "does this work" "32" "10"
-    (* return body *)
+    add_branch id diagram_id "does this work" "32" "10"
+    (* return nodes *)
 
 
 let extract req =
