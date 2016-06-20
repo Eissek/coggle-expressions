@@ -4,6 +4,7 @@ open Cohttp_async
 open Async_ssl.Std
 (* open Yojson *)
 (* open Cohttp_lwt_unix *)
+open Str
 
 
 (* let response_handler code = *)
@@ -137,6 +138,14 @@ let generate_uri code =
     ("code", [code]);
     ("grant_type", ["authorization_code"]);
     ("redirect_uri", ["http://localhost:8080/coggle"])]
+
+let replace old _new str  =
+  Str.global_replace (Str.regexp old) _new str
+
+let tokenize code =
+  replace "(" " ( " code
+  |> replace ")" " ) "
+  |> String.split _ ' '
 
 
 let get_token code =
