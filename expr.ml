@@ -201,10 +201,10 @@ let get_token code =
     (* (\* print_endline ("MY NODES: " ^ nodes); *\) *)
     (* String.slice nodes 1 (String.length nodes - 1) *)
     (* |> get_json_id *)
-    handle_diagram_id diagram_data
-    |> get_node_resource_id
+    let diagram_id = handle_diagram_id diagram_data in
+    get_node_resource_id diagram_id
     >>= fun id ->
-    add_branch id id "does this work" "32" "10"
+    add_branch id diagram_id "does this work" "32" "10"
     (* return nodes *)
 
 
