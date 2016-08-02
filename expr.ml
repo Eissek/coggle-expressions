@@ -188,12 +188,13 @@ let get_token code =
     new_diagram "testing"
     >>= fun (diagram_data) ->
     let diagram_id = get_json_id diagram_data in (* returns string id *)
-    get_all_nodes diagram_id
-    >>= fun nodes ->
-    (* print_endline ("MY NODES: " ^ nodes); *)
-    String.slice nodes 1 (String.length nodes - 1)
-    |> get_json_id
-    |> fun id ->
+    (* get_all_nodes diagram_id *)
+    (* >>= fun nodes -> *)
+    (* (\* print_endline ("MY NODES: " ^ nodes); *\) *)
+    (* String.slice nodes 1 (String.length nodes - 1) *)
+    (* |> get_json_id *)
+    get_node_resource_id diagram_id
+    >>= fun id ->
     add_branch id diagram_id "does this work" "32" "10"
     (* return nodes *)
 
