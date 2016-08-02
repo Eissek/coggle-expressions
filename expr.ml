@@ -2,6 +2,7 @@ open Core.Std
 open Async.Std
 open Cohttp_async
 open Async_ssl.Std
+open Sexplib.Std
 (* open Yojson *)
 (* open Cohttp_lwt_unix *)
 open Str
@@ -145,7 +146,26 @@ let replace old _new str  =
 let tokenize code =
   replace "(" " ( " code
   |> replace ")" " ) "
-  |> String.split _ ' '
+  (* |> fun y -> String.slice y 1 (String.length y - 1) *)
+  |> fun x -> String.split x ~on: ' '
+              |> fun l -> List.filter l (fun s -> s <> "")
+
+let get_node_resource_id id =
+  get_all_nodes id
+  >>| fun nodes ->
+  String.slice nodes 1 (String.length nodes - 1)
+  |> get_json_id
+
+
+(* let rec read_tokens tokens = *)
+(*   match (String.length tokens) > 0 with *)
+(*   | false -> failwith "Unexpected EOF while reading" *)
+(*   | true -> let token = List.hd tokens in *)
+(*     match token with *)
+(*     | "(" -> let l = [] in *)
+(*       while List.nth tokens 1 <> Some ")" *)
+(*     | ")" -> failwith "Unexpected )" *)
+(*     | _ -> *)
 
 
 let get_token code =
