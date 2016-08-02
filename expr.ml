@@ -150,6 +150,14 @@ let tokenize code =
   |> fun x -> String.split x ~on: ' '
               |> fun l -> List.filter l (fun s -> s <> "")
 
+let diagram_id = ref None
+
+let handle_diagram_id data = (* Maybe check diagram ref is not set first*)
+  get_json_id data
+  |> fun id -> diagram_id := Some id;
+  (* !diagram_id *)
+  id
+
 let get_node_resource_id id =
   get_all_nodes id
   >>| fun nodes ->
