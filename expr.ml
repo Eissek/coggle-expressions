@@ -153,10 +153,13 @@ let tokenize code =
 let diagram_id = ref None
 
 let handle_diagram_id data = (* Maybe check diagram ref is not set first*)
-  get_json_id data
-  |> fun id -> diagram_id := Some id;
+  match !diagram_id with
+  | None ->
+    get_json_id data
+    |> fun id -> diagram_id := Some id;
+    id
+  | Some x -> x
   (* !diagram_id *)
-  id
 
 let get_node_resource_id id =
   get_all_nodes id
@@ -175,6 +178,36 @@ let get_node_resource_id id =
 (*     | ")" -> failwith "Unexpected )" *)
 (*     | _ -> *)
 
+let branch_id_table = Hashtbl.create 30
+let t = Hashtbl.add branch_id_table 1 "hy"
+
+let tail_list ls =
+  match (List.tl ls) with
+  | None -> []
+  | Some l -> l
+
+let read_tokens tokens levels_count itr_count f =
+  match (List.hd tokens) with
+  | Some ")" -> if itr_count = 0
+    then print_endline "Syntax error unexpect )"
+    else let tail = tail_list tokens in
+      let levels = levels_count - 1 in (* minus count for closed paren *)
+      f tail levels (itr_count + 1)
+  | Some "(" ->
+    let tail = tail_list tokens in
+    let levels = levels_count + 1 in
+    f tail levels (itr_count + 1)
+  | Some token -> print_endline "hshs"
+  | None -> print_endline "nothing"
+
+let rec tokens_parser tokens levels_count itr_count =
+  match tokens with
+  | [] -> if itr_count = 0
+    then print_endline "No tokens found."
+    else print_endline "Parse Completed."
+  (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
+  (* | first :: rest -> print_endline "hww" *)
+  | tk_list -> read_tokens tokens levels_count itr_count tokens_parser
 
 let get_token code =
   let headers = (Cohttp.Header.of_list create_auth) in
