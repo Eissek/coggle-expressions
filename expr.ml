@@ -150,13 +150,13 @@ let tokenize code =
   |> fun x -> String.split x ~on: ' '
               |> fun l -> List.filter l (fun s -> s <> "")
 
-let diagram_id = ref None
+let diagram_node_id = ref None
 
 let handle_diagram_id data = (* Maybe check diagram ref is not set first*)
-  match !diagram_id with
+  match !diagram_node_id with
   | None ->
     get_json_id data
-    |> fun id -> diagram_id := Some id;
+    |> fun id -> diagram_node_id := Some id;
     id
   | Some x -> x
   (* !diagram_id *)
@@ -181,6 +181,19 @@ let get_node_resource_id id =
 let branch_id_table = Hashtbl.create 30
 let t = Hashtbl.add branch_id_table 1 "hy"
 
+let new_branch counter parent diagram text levels =
+    if counter = 0 then new_diagram text
+      >>= fun data ->
+      let diagram_id = handle_diagram_id data in
+      get_node_resource_id diagram_id
+    else
+      add_branch (Hashtbl.find branch_id_table (levels - 1))
+        diagram text "55" "98"
+      >>= fun body -> Cohttp_async.Body.to_string body
+      >>= fun str_b -> return (get_json_id str_b)
+      (* |> get_json_id  *)
+
+
 let tail_list ls =
   match (List.tl ls) with
   | None -> []
@@ -192,6 +205,7 @@ let read_tokens tokens levels_count itr_count f =
     then print_endline "Syntax error unexpect )"
     else let tail = tail_list tokens in
       let levels = levels_count - 1 in (* minus count for closed paren *)
+      Hashtbl.remove branch_id_table levels_count; (* id is no longer needed *)
       f tail levels (itr_count + 1)
   | Some "(" ->
     let tail = tail_list tokens in
