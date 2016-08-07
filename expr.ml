@@ -191,7 +191,8 @@ let new_branch counter parent diagram text levels =
         diagram text "55" "98"
       >>= fun body -> Cohttp_async.Body.to_string body
       >>= fun str_b -> return (get_json_id str_b)
-      (* |> get_json_id  *)
+     (* after this need to store the id returned *)
+     (* |> get_json_id  *)
 
 
 let tail_list ls =
@@ -240,7 +241,7 @@ let get_token code =
     |> fun tk ->
     tkn := tk;
     print_endline ("set: " ^ !tkn);
-    new_diagram "testing"
+    new_diagram "testing" (* make change here *)
     >>= fun (diagram_data) ->
     (* let diagram_id = get_json_id diagram_data in (\* returns string id *\) *)
     (* get_all_nodes diagram_id *)
@@ -260,13 +261,18 @@ let extract req =
   match Uri.get_query_param uri "code" with
   | Some(code) ->
     if code = "" then
-      None
+      (* None *) false
     else
       (* print_endline code *)
       (* printf "Code: %s \n" get_secret *)
       get_token code
-      |> fun _ -> Some code
-  | None -> None
+      (* |> fun _ -> Some code *)
+      |> fun _ ->  true
+  | None -> (* None *) false
+
+let init req =
+  extract req
+  |> fun x -> x
 
 let start_server port () =
   eprintf "Listening for HTTP on port %d\n" port;
@@ -281,7 +287,8 @@ let start_server port () =
        let uri = Cohttp.Request.uri req in
        match Uri.path uri with
        | "/coggle" ->
-         extract req
+         (* extract req *)
+         init req
            |> (fun _ ->
              match !inet_addr with
              | None -> Server.respond_with_string "inet address not found"
