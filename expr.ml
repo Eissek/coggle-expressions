@@ -184,17 +184,21 @@ let get_node_resource_id id =
 let branch_id_table = Hashtbl.create 30
 (* let t = Hashtbl.add branch_id_table 1 "hy" *)
 
-let new_branch counter (* parent *) diagram text levels =
+exception Diagram_id_not_found
+let new_branch counter (* parent *) (* diagram *) text levels =
     if counter = 0 then new_diagram text
       >>= fun data ->
       let diagram_id = handle_diagram_id data in
       get_node_resource_id diagram_id
     else
-      add_branch (Hashtbl.find branch_id_table (levels - 1))
-        diagram text "55" "98"
-      >>= fun body ->
-      Cohttp_async.Body.to_string body
-      >>| fun b -> get_json_id b
+      match !diagram_node_id with
+      | None -> raise Diagram_id_not_found
+      | Some diagram ->
+        add_branch (Hashtbl.find branch_id_table (levels - 1))
+          diagram text "55" "98"
+        >>= fun body ->
+        Cohttp_async.Body.to_string body
+        >>| fun b -> get_json_id b
       (* >>= fun str_b -> (\* return (get_json_id str_b) *\) *)
       (* match Deferred.peek (Cohttp_async.Body.to_string body) with *)
       (* | None -> "" *)
@@ -261,11 +265,12 @@ let rec tokens_parser tokens levels_count itr_count =
       let levels = levels_count + 1 in
       tokens_parser tail levels (itr_count + 1)
     | Some token ->
-      let diagram = match !diagram_node_id with
-        | Some id -> id
-        | None -> raise (Diagram_not_found ) in
-      new_branch itr_count diagram token levels_count
-      (* |> fun x -> (Some x) *)
+      (* let diagram = match !diagram_node_id with *)
+      (*   | Some id -> id *)
+      (*   | None -> raise (Diagram_not_found ) *)
+      (* in *) (* probably not needed as new_branch creates new diagram *)
+      new_branch itr_count (* !diagram_node_id *) token levels_count
+    (* |> fun x -> (Some x) *)
     | None -> raise (Syntax_incorrect) (* print_endline "nothing" *)
 
 let get_coggle_token code =
