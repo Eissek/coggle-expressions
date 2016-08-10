@@ -18,6 +18,9 @@ open Str
 (*               | None -> "" *)
 (*               | Some x ->  x *)
 
+exception Diagram_not_found
+exception Code_not_found
+  
 let get_id = "5748885591ce2c8246852e66"
 let get_secret  = In_channel.read_all "../moonlandings.txt"
                     |> String.strip
@@ -179,9 +182,9 @@ let get_node_resource_id id =
 (*     | _ -> *)
 
 let branch_id_table = Hashtbl.create 30
-let t = Hashtbl.add branch_id_table 1 "hy"
+(* let t = Hashtbl.add branch_id_table 1 "hy" *)
 
-let new_branch counter parent diagram text levels =
+let new_branch counter (* parent *) diagram text levels =
     if counter = 0 then new_diagram text
       >>= fun data ->
       let diagram_id = handle_diagram_id data in
@@ -189,8 +192,13 @@ let new_branch counter parent diagram text levels =
     else
       add_branch (Hashtbl.find branch_id_table (levels - 1))
         diagram text "55" "98"
-      >>= fun body -> Cohttp_async.Body.to_string body
-      >>= fun str_b -> return (get_json_id str_b)
+      >>= fun body ->
+      Cohttp_async.Body.to_string body
+      >>| fun b -> get_json_id b
+      (* >>= fun str_b -> (\* return (get_json_id str_b) *\) *)
+      (* match Deferred.peek (Cohttp_async.Body.to_string body) with *)
+      (* | None -> "" *)
+      (* | Some x -> get_json_id x *)
      (* after this need to store the id returned *)
      (* |> get_json_id  *)
 
@@ -200,31 +208,67 @@ let tail_list ls =
   | None -> []
   | Some l -> l
 
-let read_tokens tokens levels_count itr_count f =
-  match (List.hd tokens) with
-  | Some ")" -> if itr_count = 0
-    then print_endline "Syntax error unexpect )"
-    else let tail = tail_list tokens in
-      let levels = levels_count - 1 in (* minus count for closed paren *)
-      Hashtbl.remove branch_id_table levels_count; (* id is no longer needed *)
-      f tail levels (itr_count + 1)
-  | Some "(" ->
-    let tail = tail_list tokens in
-    let levels = levels_count + 1 in
-    f tail levels (itr_count + 1)
-  | Some token -> print_endline "hshs"
-  | None -> print_endline "nothing"
+exception Syntax_incorrect
+(* let read_tokens tokens levels_count itr_count f = *)
+(*   match (List.hd tokens) with *)
+(*   | Some ")" -> if itr_count = 0 *)
+(*     then raise (Syntax_incorrect) *)
+(*       (\* print_endline "Syntax error unexpect )" *\) *)
+(*     else let tail = tail_list tokens in *)
+(*       let levels = levels_count - 1 in (\* minus count for closed paren *\) *)
+(*       Hashtbl.remove branch_id_table levels_count; (\* id is no longer needed *\) *)
+(*       f tail levels (itr_count + 1) *)
+(*   | Some "(" -> *)
+(*     let tail = tail_list tokens in *)
+(*     let levels = levels_count + 1 in *)
+(*     f tail levels (itr_count + 1) *)
+(*   | Some token -> *)
+(*     let diagram = match !diagram_node_id with *)
+(*       | Some id -> id *)
+(*       | None -> raise (Diagram_not_found ) in *)
+(*     new_branch itr_count diagram token levels_count *)
+(*       |> fun x -> (\* print_endline "hshs" *\) x *)
+(*     (\* >>= fun x -> return (Hashtbl.add branch_id_table levels_count x) *\) *)
+(*       (\* print_endline "hshs" *\) *)
+(*     (\* >>| fun _ -> "jjsjs" *\) *)
+(*     (\* |> fun _ -> return "hshs" *\) *)
+(*     (\* >>= fun _ -> print_endline "hshs" *\) *)
+(*   | None -> raise (Syntax_incorrect) (\* print_endline "nothing" *\) *)
 
+let get_x d = match (Deferred.peek d) with
+  | None -> " "
+  | Some x -> x
+
+exception Token_not_found
 let rec tokens_parser tokens levels_count itr_count =
   match tokens with
   | [] -> if itr_count = 0
-    then print_endline "No tokens found."
-    else print_endline "Parse Completed."
+    then raise (Token_not_found)
+    else (* return (Some "Parse Completed.") *) return ""
   (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
   (* | first :: rest -> print_endline "hww" *)
-  | tk_list -> read_tokens tokens levels_count itr_count tokens_parser
+  | tk_list -> (* read_tokens tokens levels_count itr_count tokens_parser *)
+    match (List.hd tokens) with
+    | Some ")" -> if itr_count = 0
+      then raise (Syntax_incorrect)
+      (* print_endline "Syntax error unexpect )" *)
+      else let tail = tail_list tokens in
+        let levels = levels_count - 1 in (* minus count for closed paren *)
+        Hashtbl.remove branch_id_table levels_count; (* id is no longer needed *)
+        tokens_parser tail levels (itr_count + 1)
+    | Some "(" ->
+      let tail = tail_list tokens in
+      let levels = levels_count + 1 in
+      tokens_parser tail levels (itr_count + 1)
+    | Some token ->
+      let diagram = match !diagram_node_id with
+        | Some id -> id
+        | None -> raise (Diagram_not_found ) in
+      new_branch itr_count diagram token levels_count
+      (* |> fun x -> (Some x) *)
+    | None -> raise (Syntax_incorrect) (* print_endline "nothing" *)
 
-let get_token code =
+let get_coggle_token code =
   let headers = (Cohttp.Header.of_list create_auth) in
   Cohttp_async.Client.post_form
     ~headers: headers
@@ -234,26 +278,35 @@ let get_token code =
     (Uri.of_string "https://coggle.it/token")
     >>= fun (_, body) ->
     Cohttp_async.Body.to_string body
-    >>= fun b ->
+    >>| fun b -> (* changed from >>= *)
     (* printf "yup:  %s\n" b; *)
     (* parse_token b |> print_endline; *)
     parse_token b
+    (* |> fun x ->  match (Deferred.peek x) with *)
+    (* | None -> "" *)
+    (* | Some d -> d *)
     |> fun tk ->
     tkn := tk;
     print_endline ("set: " ^ !tkn);
-    new_diagram "testing" (* make change here *)
-    >>= fun (diagram_data) ->
+    tk
+    (* new_diagram "testing" (\* make change here *\) *)
+    (* >>= fun (diagram_data) -> *)
+
+
+    
     (* let diagram_id = get_json_id diagram_data in (\* returns string id *\) *)
     (* get_all_nodes diagram_id *)
     (* >>= fun nodes -> *)
     (* (\* print_endline ("MY NODES: " ^ nodes); *\) *)
     (* String.slice nodes 1 (String.length nodes - 1) *)
     (* |> get_json_id *)
-    let diagram_id = handle_diagram_id diagram_data in
-    get_node_resource_id diagram_id
-    >>= fun id ->
-    add_branch id diagram_id "does this work" "32" "10"
-    (* return nodes *)
+
+    
+    (* let diagram_id = handle_diagram_id diagram_data in *)
+    (* get_node_resource_id diagram_id *)
+    (* >>= fun id -> *)
+    (* add_branch id diagram_id "does this work" "32" "10" *)
+
 
 
 let extract req =
@@ -261,18 +314,25 @@ let extract req =
   match Uri.get_query_param uri "code" with
   | Some(code) ->
     if code = "" then
-      (* None *) false
+      None (* false *)
     else
       (* print_endline code *)
       (* printf "Code: %s \n" get_secret *)
-      get_token code
+      (* get_coggle_token code *)
       (* |> fun _ -> Some code *)
-      |> fun _ ->  true
-  | None -> (* None *) false
+      (* |> fun _ ->  true *)
+      Some code
+  | None -> None
+
 
 let init req =
   extract req
-  |> fun x -> x
+  |> fun code ->
+  match code with
+  | None -> raise (Code_not_found )
+  | Some code ->
+    get_coggle_token code
+    |> fun _ -> tokens_parser
 
 let start_server port () =
   eprintf "Listening for HTTP on port %d\n" port;
