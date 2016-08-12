@@ -248,6 +248,15 @@ let get_def x = match Deferred.peek x with
   | None -> raise (Deferred_is_None)
   | Some y -> y
 
+exception No_levels_or_id_returned
+
+let store_node_id id =
+  (* id param is a tuple *)
+    match id with
+    | None -> raise (No_levels_or_id_returned)
+    | Some (x, y) -> Hashtbl.add branch_id_table x y;
+     Some x
+
 let read_tokens tokens levels_count itr_count f =
   match (List.hd tokens) with
   | Some ")" -> if itr_count = 0
@@ -268,7 +277,9 @@ let read_tokens tokens levels_count itr_count f =
     (* in *) (* probably not needed as new_branch creates new diagram *)
     new_branch itr_count (* !diagram_node_id *) token levels_count
     |> get_def
-    |> fun x -> (Some (levels_count, x))
+    |> fun x ->
+    store_node_id (Some (levels_count, x))
+      (* (Some (levels_count, x)) *)
   (* |> fun x -> (Some x) *)
   | None -> raise (Syntax_incorrect) (* print_endline "nothing" *)
 
@@ -340,13 +351,7 @@ let extract req =
   | None -> None
 
 
-exception No_levels_or_id_returned
 
-let store_node_id id =
-    match id with
-    | None -> raise (No_levels_or_id_returned)
-    | Some (x, y) -> Hashtbl.add branch_id_table x y;
-      x
 
 let test_c = ["("; "begin"; "("; "2nd"; "("; "2.2"; ")"; ")";
               "("; "3rd"; ")"; ")"]
@@ -358,7 +363,7 @@ let init req =
   | Some code ->
     get_coggle_token code
     |> fun _ -> tokens_parser test_c 0 0
-    |> store_node_id
+    (* |> store_node_id *)
 (* fun x -> match x with *)
     (* | None -> raise (No_levels_or_id_returned) *)
     (* | Some (x, y) -> Hashtbl.add branch_id_table x y; x *)
