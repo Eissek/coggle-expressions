@@ -186,26 +186,32 @@ let branch_id_table = Hashtbl.create 30
 (* let t = Hashtbl.add branch_id_table 1 "hy" *)
 
 exception Diagram_id_not_found
-let new_branch counter (* parent *) (* diagram *) text levels =
-    if counter = 0 then new_diagram text
-      >>= fun data ->
-      let diagram_id = handle_diagram_id data in
-      get_node_resource_id diagram_id
-    else
-      match !diagram_node_id with
-      | None -> raise Diagram_id_not_found
-      | Some diagram ->
-        add_branch (Hashtbl.find branch_id_table (levels - 1))
-          diagram text "55" "98"
-        >>= fun body ->
-        Cohttp_async.Body.to_string body
-        >>| fun b -> get_json_id b
-      (* >>= fun str_b -> (\* return (get_json_id str_b) *\) *)
-      (* match Deferred.peek (Cohttp_async.Body.to_string body) with *)
-      (* | None -> "" *)
-      (* | Some x -> get_json_id x *)
-     (* after this need to store the id returned *)
-     (* |> get_json_id  *)
+let new_branch counter (* parent *) (* diagram *) text levels token_count =
+  print_endline "NEW BRANCH";
+  print_int token_count;
+  if token_count = 1 then
+    new_diagram text
+    >>= fun data ->
+    print_endline "NEW DIAGRAM";
+    let diagram_id = handle_diagram_id data in
+    get_node_resource_id diagram_id
+  else
+    match !diagram_node_id with
+    | None ->
+      raise Diagram_id_not_found
+    | Some diagram ->
+      print_endline "HEEEEEEEElp";
+      add_branch (Hashtbl.find branch_id_table (levels - 1))
+        diagram text "55" "98"
+      >>= fun body ->
+      Cohttp_async.Body.to_string body
+      >>| fun b -> get_json_id b
+(* >>= fun str_b -> (\* return (get_json_id str_b) *\) *)
+(* match Deferred.peek (Cohttp_async.Body.to_string body) with *)
+(* | None -> "" *)
+(* | Some x -> get_json_id x *)
+(* after this need to store the id returned *)
+(* |> get_json_id  *)
 
 
 let tail_list ls =
@@ -257,7 +263,7 @@ let store_node_id id =
     | Some (x, y) -> Hashtbl.add branch_id_table x y;
      Some x
 
-let read_tokens tokens levels_count itr_count f =
+let read_tokens tokens levels_count itr_count f tkn_count =
   match (List.hd tokens) with
   | Some ")" -> if itr_count = 0
     then raise (Syntax_incorrect)
@@ -265,34 +271,36 @@ let read_tokens tokens levels_count itr_count f =
     else let tail = tail_list tokens in
       let levels = levels_count - 1 in (* minus count for closed paren *)
       Hashtbl.remove branch_id_table levels_count; (* id is no longer needed *)
-      f tail levels (itr_count + 1)
+      f tail levels (itr_count + 1) tkn_count
   | Some "(" ->
     let tail = tail_list tokens in
     let levels = levels_count + 1 in
-    f tail levels (itr_count + 1)
+    f tail levels (itr_count + 1) tkn_count
   | Some token ->
     (* let diagram = match !diagram_node_id with *)
     (*   | Some id -> id *)
     (*   | None -> raise (Diagram_not_found ) *)
     (* in *) (* probably not needed as new_branch creates new diagram *)
-    new_branch itr_count (* !diagram_node_id *) token levels_count
-    |> get_def
-    |> fun x ->
+    print_int itr_count;
+    new_branch itr_count (* !diagram_node_id *) token levels_count (tkn_count + 1)
+    (* |> get_def *)
+    (* |> fun x -> *)
+      >>| fun x ->
     store_node_id (Some (levels_count, x))
       (* (Some (levels_count, x)) *)
   (* |> fun x -> (Some x) *)
   | None -> raise (Syntax_incorrect) (* print_endline "nothing" *)
 
 exception Token_not_found
-let rec tokens_parser tokens levels_count itr_count =
+let rec tokens_parser tokens levels_count itr_count tkn_count =
   match tokens with
   | [] -> if itr_count = 0
     then raise (Token_not_found)
-    else None
+    else return None
       (* return (Some "Parse Completed.") *) (* return "" *)
   (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
   (* | first :: rest -> print_endline "hww" *)
-  | tk_list -> read_tokens tokens levels_count itr_count tokens_parser
+  | tk_list -> read_tokens tokens levels_count itr_count tokens_parser tkn_count
 
 let get_coggle_token code =
   let headers = (Cohttp.Header.of_list create_auth) in
@@ -362,7 +370,7 @@ let init req =
   | None -> raise (Code_not_found )
   | Some code ->
     get_coggle_token code
-    |> fun _ -> tokens_parser test_c 0 0
+    |> fun _ -> tokens_parser test_c 0 0 0
     (* |> store_node_id *)
 (* fun x -> match x with *)
     (* | None -> raise (No_levels_or_id_returned) *)
