@@ -193,6 +193,7 @@ let new_branch counter (* parent *) (* diagram *) text levels token_count =
     new_diagram text
     >>= fun data ->
     print_endline "NEW DIAGRAM";
+    print_endline data;
     let diagram_id = handle_diagram_id data in
     get_node_resource_id diagram_id
   else
@@ -370,7 +371,7 @@ let init req =
   | None -> raise (Code_not_found )
   | Some code ->
     get_coggle_token code
-    |> fun _ -> tokens_parser test_c 0 0 0
+    >>= fun _ -> tokens_parser test_c 0 0 0
     (* |> store_node_id *)
 (* fun x -> match x with *)
     (* | None -> raise (No_levels_or_id_returned) *)
