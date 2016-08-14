@@ -89,7 +89,7 @@ let add_branch parent diagram text x y =
   let uri = Uri.of_string
       ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn)
   in
-  let data  = `Assoc [("offset", `Assoc [("x", `Int 12); ("y", `Int 20)]);
+  let data  = `Assoc [("offset", `Assoc [("x", `Int 100); ("y", `Int 70)]);
                       ("text", `String text);
                       ("parent", `String parent)] in
   let main_body = Cohttp_async.Body.of_string (Yojson.Basic.to_string data)  in
@@ -100,7 +100,8 @@ let add_branch parent diagram text x y =
     >>= fun (_, body) ->
     Cohttp_async.Body.to_string body
     >>= fun b -> print_endline b;
-    return body
+    (* return body *)
+    return b
 
 (* Yojson.Basic. *)
 
@@ -205,8 +206,11 @@ let new_branch counter (* parent *) (* diagram *) text levels token_count =
       add_branch (Hashtbl.find branch_id_table (levels - 1))
         diagram text "55" "98"
       >>= fun body ->
-      Cohttp_async.Body.to_string body
-      >>| fun b -> get_json_id b
+      (* Cohttp_async.Body.to_string body *)
+      (* >>= fun b -> *)
+      print_endline ("B: " ^ body);
+      return (get_json_id body)
+         (* return b *)
 (* >>= fun str_b -> (\* return (get_json_id str_b) *\) *)
 (* match Deferred.peek (Cohttp_async.Body.to_string body) with *)
 (* | None -> "" *)
