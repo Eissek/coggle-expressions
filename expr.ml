@@ -193,7 +193,7 @@ let new_branch counter (* parent *) (* diagram *) text levels token_count =
     new_diagram text
     >>= fun data ->
     print_endline "NEW DIAGRAM";
-    print_endline data;
+    (* print_endline data; *)
     let diagram_id = handle_diagram_id data in
     get_node_resource_id diagram_id
   else
@@ -286,8 +286,9 @@ let read_tokens tokens levels_count itr_count f tkn_count =
     new_branch itr_count (* !diagram_node_id *) token levels_count (tkn_count + 1)
     (* |> get_def *)
     (* |> fun x -> *)
-      >>| fun x ->
+    >>= fun x ->
     store_node_id (Some (levels_count, x))
+    |> fun _ -> f (tail_list tokens) levels_count (itr_count + 1) (tkn_count + 1)
       (* (Some (levels_count, x)) *)
   (* |> fun x -> (Some x) *)
   | None -> raise (Syntax_incorrect) (* print_endline "nothing" *)
