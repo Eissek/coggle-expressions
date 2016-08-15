@@ -382,7 +382,7 @@ let init req =
     (* | None -> raise (No_levels_or_id_returned) *)
     (* | Some (x, y) -> Hashtbl.add branch_id_table x y; x *)
 
-let start_server port () =
+let start_server port filename () =
   eprintf "Listening for HTTP on port %d\n" port;
   eprintf "Try 'curl http://localhost:%d/coggle?code=xyz'\n%!" port;
   print_endline "Enter the following url to your browser:";
@@ -415,10 +415,11 @@ let start_server port () =
 
 let () =
   Command.async
-    ~summary:"Start a hello world Async server"
-    Command.Spec.(empty +>
-                  flag "-p" (optional_with_default 8080 int)
+    ~summary:"Start Async server"
+    Command.Spec.(empty
+                  +> flag "-p" (optional_with_default 8080 int)
                     ~doc:"int Source port to listen on"
+                  +> anon ("filename" %: string)
                  ) start_server
   |> Command.run
 
