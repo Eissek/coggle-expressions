@@ -175,7 +175,7 @@ let get_node_resource_id id =
   |> get_json_id
 
 
-let insert_replaced_data begin_index close_index sub_str original_str =
+let insert_replaced_data begin_index close_index original_str sub_str =
   match (begin_index > 0) with
   | true ->
     let before = Str.string_before original_str begin_index in
@@ -191,12 +191,14 @@ let insert_replaced_data begin_index close_index sub_str original_str =
     else
       sub_str
 
-let replace_spaces data index =
+let rec replace_spaces index data =
   try
     let opening_quote = Str.search_forward (Str.regexp "\\\"") data index in
     let closing_quote = Str.search_forward (Str.regexp "\\\"") data (opening_quote + 1) in
     String.sub ~pos:opening_quote ~len:(closing_quote - 1) data
     |> replace " " "§"
+    |> insert_replaced_data opening_quote closing_quote data
+    |> replace_spaces (closing_quote + 1) (* the last param is always added from the pipe*)
    with
      Not_found -> data
 
