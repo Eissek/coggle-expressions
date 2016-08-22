@@ -22,6 +22,8 @@ exception Diagram_not_found
 exception Code_not_found
 exception Deferred_is_None
 
+
+
 let get_id = "5748885591ce2c8246852e66"
 let get_secret  = In_channel.read_all "../moonlandings.txt"
                     |> String.strip
@@ -172,6 +174,31 @@ let get_node_resource_id id =
   String.slice nodes 1 (String.length nodes - 1)
   |> get_json_id
 
+
+let insert_replaced_data begin_index close_index sub_str original_str =
+  match (begin_index > 0) with
+  | true ->
+    let before = Str.string_before original_str begin_index in
+    if close_index < (String.length original_str - 1) then
+      let after = Str.string_after original_str close_index in
+      before ^ sub_str ^ after
+    else (* reach the last index e.g. the end of the string *)
+      before ^ sub_str
+  | false -> (* starts at the very first index so nothing before it*)
+    if close_index < (String.length original_str - 1) then
+      let after = Str.string_after original_str close_index in
+      sub_str ^ after
+    else
+      sub_str
+
+let replace_spaces data index =
+  try
+    let opening_quote = Str.search_forward (Str.regexp "\\\"") data index in
+    let closing_quote = Str.search_forward (Str.regexp "\\\"") data (opening_quote + 1) in
+    String.sub ~pos:opening_quote ~len:(closing_quote - 1) data
+    |> replace " " "§"
+   with
+     Not_found -> data
 
 (* let rec read_tokens tokens = *)
 (*   match (String.length tokens) > 0 with *)
@@ -369,14 +396,14 @@ let extract req =
 
 let test_c = ["("; "begin"; "("; "2nd"; "("; "2.2"; ")"; ")";
               "("; "3rd"; ")"; ")"]
-let init req =
+let init req tokens =
   extract req
   |> fun code ->
   match code with
   | None -> raise (Code_not_found )
   | Some code ->
     get_coggle_token code
-    >>= fun _ -> tokens_parser test_c 0 0 0
+    >>= fun _ -> tokens_parser tokens 0 0 0 (* test_c 0 0 0 *)
     (* |> store_node_id *)
 (* fun x -> match x with *)
     (* | None -> raise (No_levels_or_id_returned) *)
@@ -396,7 +423,9 @@ let start_server port filename () =
        match Uri.path uri with
        | "/coggle" ->
          (* extract req *)
-         init req
+         In_channel.read_all filename
+         |> tokenize
+         |> init req (* test_c *)
            |> (fun _ ->
              match !inet_addr with
              | None -> Server.respond_with_string "inet address not found"
