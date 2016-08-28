@@ -191,16 +191,65 @@ let insert_replaced_data begin_index close_index original_str sub_str =
     else
       sub_str
 
-let rec replace_spaces index data =
-  try
-    let opening_quote = Str.search_forward (Str.regexp "\\\"") data index in
-    let closing_quote = Str.search_forward (Str.regexp "\\\"") data (opening_quote + 1) in
+(* let rec replace_spaces index data = *)
+(*   try *)
+(*     let opening_quote = Str.search_forward (Str.regexp "\\\"") data index in *)
+(*     let closing_quote = Str.search_forward (Str.regexp "\\\"") data (opening_quote + 1) in *)
+(*     String.sub ~pos:opening_quote ~len:(closing_quote - 1) data *)
+(*     |> replace " " "§" *)
+(*     |> insert_replaced_data opening_quote closing_quote data *)
+(*     |> replace_spaces (closing_quote + 1) (\* the last param is always added from the pipe*\) *)
+(*    with *)
+(*      Not_found -> data *)
+
+let rec replace_spaces opening_quote closing_quote data f =
     String.sub ~pos:opening_quote ~len:(closing_quote - 1) data
     |> replace " " "§"
     |> insert_replaced_data opening_quote closing_quote data
-    |> replace_spaces (closing_quote + 1) (* the last param is always added from the pipe*)
-   with
-     Not_found -> data
+    |> f (closing_quote + 1) (* the last param is always added from the pipe*)
+   (* with *)
+   (*   Not_found -> data *)
+
+let rec find_quotes index data =
+  try
+    match (String.index_from data index '"') with
+    | None -> data
+    | Some x ->
+      (match (String.index_from data (x + 1) '"') with
+      | None -> data
+      | Some y -> replace_spaces x y data find_quotes)
+  with
+  (* | Invalid_argument s -> data *)
+  | Not_found -> data
+
+let data_from_file = ref ""
+
+let concat_remaining last_index len replaced_data =
+  match (last_index < (len - 1)) with
+  | false -> replaced_data
+(* Nothing to concat as there is nothing after the last index*)
+  | true -> (* replaced_data ^ (Str.string_after !data_from_file last_index) *)
+    String.concat [replaced_data; (Str.string_after !data_from_file last_index)]
+
+let transperse_data data =
+  let rec find_string_in_data start last replaced_data =
+    let len = String.length !data_from_file in
+    match (String.index_from data start '"') with
+    | None -> concat_remaining last len replaced_data
+    | Some x ->
+      (match (String.index_from data (x + 1) '"') with
+      | None -> concat_remaining last len replaced_data
+      | Some y ->
+      let fill_space = replace " " "§" (String.sub ~pos:x ~len: (y-x) data) in
+      if x > 0 then
+        let d = String.concat [(String.sub ~pos:last ~len:x data); fill_space] in
+        find_string_in_data (y + 1) y d
+      else find_string_in_data (y + 1) y fill_space);
+  in
+  find_string_in_data 0 0 !data_from_file
+
+
+
 
 (* let rec read_tokens tokens = *)
 (*   match (String.length tokens) > 0 with *)
