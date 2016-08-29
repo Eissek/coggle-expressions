@@ -181,13 +181,13 @@ let insert_replaced_data begin_index close_index original_str sub_str =
     let before = Str.string_before original_str begin_index in
     if close_index < (String.length original_str - 1) then
       let after = Str.string_after original_str close_index in
-      before ^ sub_str ^ after
+      String.concat [before; sub_str; after]
     else (* reach the last index e.g. the end of the string *)
-      before ^ sub_str
+      String.concat [before; sub_str]
   | false -> (* starts at the very first index so nothing before it*)
     if close_index < (String.length original_str - 1) then
       let after = Str.string_after original_str close_index in
-      sub_str ^ after
+      String.concat [sub_str; after]
     else
       sub_str
 
@@ -228,25 +228,31 @@ let concat_remaining last_index len replaced_data =
   match (last_index < (len - 1)) with
   | false -> replaced_data
 (* Nothing to concat as there is nothing after the last index*)
+  | true when last_index = 0 -> replaced_data
   | true -> (* replaced_data ^ (Str.string_after !data_from_file last_index) *)
     String.concat [replaced_data; (Str.string_after !data_from_file last_index)]
-
+(* "§" *)
 let transperse_data data =
-  let rec find_string_in_data start last replaced_data =
+  let rec find_string_in_data start last count replaced_data =
     let len = String.length !data_from_file in
     match (String.index_from data start '"') with
     | None -> concat_remaining last len replaced_data
     | Some x ->
       (match (String.index_from data (x + 1) '"') with
-      | None -> concat_remaining last len replaced_data
-      | Some y ->
-      let fill_space = replace " " "§" (String.sub ~pos:x ~len: (y-x) data) in
-      if x > 0 then
-        let d = String.concat [(String.sub ~pos:last ~len:x data); fill_space] in
-        find_string_in_data (y + 1) y d
-      else find_string_in_data (y + 1) y fill_space);
+       | None -> concat_remaining last len replaced_data
+       | Some y ->
+         let last_start_difference = (y-x) + 1 in
+         let fill_space = replace " " "@" (String.sub ~pos:x ~len:last_start_difference data) in
+         if x > 0 then
+           let d = (if count = 0 then
+                   String.concat [(String.sub ~pos:last ~len:((y-x) - 1) data); fill_space]
+                   else
+                   String.concat [replaced_data; (String.sub ~pos:last ~len:((y-x) - 1) data); fill_space])
+           in
+           find_string_in_data (y + 1) (y + 1) (count + 1) d
+         else find_string_in_data (y + 1) (y + 1) (count + 1) fill_space);
   in
-  find_string_in_data 0 0 !data_from_file
+  find_string_in_data 0 0 0 !data_from_file
 
 
 
