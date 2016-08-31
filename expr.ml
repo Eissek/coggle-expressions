@@ -242,7 +242,7 @@ let transperse_data data =
        | None -> concat_remaining last len replaced_data
        | Some y ->
          let last_start_difference = (y-x) + 1 in
-         let fill_space = replace " " "@" (String.sub ~pos:x ~len:last_start_difference data) in
+         let fill_space = replace " " "§" (String.sub ~pos:x ~len:last_start_difference data) in
          if x > 0 then
            let d = (if count = 0 then
                    String.concat [(String.sub ~pos:last ~len:(x - last) data); fill_space]
