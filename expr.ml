@@ -245,9 +245,9 @@ let transperse_data data =
          let fill_space = replace " " "@" (String.sub ~pos:x ~len:last_start_difference data) in
          if x > 0 then
            let d = (if count = 0 then
-                   String.concat [(String.sub ~pos:last ~len:((y-x) - 1) data); fill_space]
+                   String.concat [(String.sub ~pos:last ~len:(x - last) data); fill_space]
                    else
-                   String.concat [replaced_data; (String.sub ~pos:last ~len:((y-x) - 1) data); fill_space])
+                   String.concat [replaced_data; (String.sub ~pos:last ~len:(x - last) data); fill_space])
            in
            find_string_in_data (y + 1) (y + 1) (count + 1) d
          else find_string_in_data (y + 1) (y + 1) (count + 1) fill_space);
@@ -386,7 +386,10 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
   match tokens with
   | [] -> if itr_count = 0
     then raise (Token_not_found)
-    else return None
+    else
+      (* None here indicates tokens have successfully been pasrsed *)
+      (* And the branches should have been created using read_tokens *)
+      return None
       (* return (Some "Parse Completed.") *) (* return "" *)
   (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
   (* | first :: rest -> print_endline "hww" *)
@@ -481,7 +484,9 @@ let start_server port filename () =
        | "/coggle" ->
          (* extract req *)
          In_channel.read_all filename
+         |> transperse_data
          |> tokenize
+         |> List.map ~f:(fun current -> replace  "§" " " current)
          |> init req (* test_c *)
            |> (fun _ ->
              match !inet_addr with
