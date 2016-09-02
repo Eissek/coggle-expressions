@@ -87,7 +87,7 @@ let get_json_id data =
 (* Cohttp_async.Body.of_string *)
 
 let generate_position level =
-  Random.self_init ();
+  (* Random.self_init (); *)
   (level * 15) + Random.int 30
 
 let add_branch parent diagram text levels (* x y *) =
@@ -464,6 +464,7 @@ let extract req =
 let test_c = ["("; "begin"; "("; "2nd"; "("; "2.2"; ")"; ")";
               "("; "3rd"; ")"; ")"]
 let init req tokens =
+  Random.self_init ();
   extract req
   |> fun code ->
   match code with
