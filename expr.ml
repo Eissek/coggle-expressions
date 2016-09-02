@@ -86,12 +86,17 @@ let get_json_id data =
 
 (* Cohttp_async.Body.of_string *)
 
-let add_branch parent diagram text x y =
+let generate_position level =
+  Random.self_init ();
+  (level * 15) + Random.int 30
+
+let add_branch parent diagram text levels (* x y *) =
   let headers = Cohttp.Header.of_list [("content-type", "application/json")] in
   let uri = Uri.of_string
       ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn)
   in
-  let data  = `Assoc [("offset", `Assoc [("x", `Int 100); ("y", `Int 70)]);
+  let data  = `Assoc [(* ("offset", `Assoc [("x", `Int 100); ("y", `Int 70)]); *)
+                      ("offset", `Assoc [("x", `Int (generate_position levels)); ("y", `Int (generate_position levels))]);
                       ("text", `String text);
                       ("parent", `String parent)] in
   let main_body = Cohttp_async.Body.of_string (Yojson.Basic.to_string data)  in
@@ -271,6 +276,8 @@ let branch_id_table = Hashtbl.create 30
 (* let t = Hashtbl.add branch_id_table 1 "hy" *)
 
 exception Diagram_id_not_found
+
+
 let new_branch counter (* parent *) (* diagram *) text levels token_count =
   print_endline "NEW BRANCH";
   print_int token_count;
@@ -288,7 +295,7 @@ let new_branch counter (* parent *) (* diagram *) text levels token_count =
     | Some diagram ->
       print_endline "HEEEEEEEElp";
       add_branch (Hashtbl.find branch_id_table (levels - 1))
-        diagram text "55" "98"
+        diagram text levels (* "55" "98" *)
       >>= fun body ->
       (* Cohttp_async.Body.to_string body *)
       (* >>= fun b -> *)
