@@ -1,1 +1,5 @@
-("main diagram" ("branch 1") ("branch 2" ("branch2.1" "branch2.2")))
+("music"
+ ("hip hop" ("Nas") ("MF DOOM") ("Wu tang" ("GZA" "Ghostface")))
+ ("Jazz" ("Coltrane") ("Miles Davis") ("Sonny Rollings"))
+ ("Funk" ("James Brown") ("Parliment Funkadelic"))
+ ("Pop" ("Janet jackson") ("Michael") ("Madonna")))

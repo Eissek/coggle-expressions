@@ -59,9 +59,9 @@ let get_json_id data =
   json |> member "_id" |> to_string
 
 
-let generate_position level =
+let generate_position level rand =
   (* Random.self_init (); *)
-  (level * 15) + Random.int 30
+  (level * 20) + Random.int rand
 
 let add_branch parent diagram text levels (* x y *) =
   let headers = Cohttp.Header.of_list [("content-type", "application/json")] in
@@ -69,7 +69,7 @@ let add_branch parent diagram text levels (* x y *) =
       ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn)
   in
   let data  = `Assoc [(* ("offset", `Assoc [("x", `Int 100); ("y", `Int 70)]); *)
-                      ("offset", `Assoc [("x", `Int (generate_position levels)); ("y", `Int (generate_position levels))]);
+                      ("offset", `Assoc [("x", `Int (generate_position levels 60)); ("y", `Int (generate_position levels 40))]);
                       ("text", `String text);
                       ("parent", `String parent)] in
   let main_body = Cohttp_async.Body.of_string (Yojson.Basic.to_string data)  in
@@ -244,18 +244,22 @@ let new_branch (* counter *) (* parent *) (* diagram *) text levels token_count 
     let diagram_id = handle_diagram_id data in
     get_node_resource_id diagram_id
   else
-    match !diagram_node_id with
+    (match !diagram_node_id with
     | None ->
       raise Diagram_id_not_found
+    | Some diagram when levels = 1 ->
+      add_branch (Hashtbl.find branch_id_table levels)
+        diagram text levels (* "55" "98" *)
     | Some diagram ->
       print_endline "HEEEEEEEElp";
+      print_int (levels - 1);
       add_branch (Hashtbl.find branch_id_table (levels - 1))
-        diagram text levels (* "55" "98" *)
-      >>= fun body ->
-      (* Cohttp_async.Body.to_string body *)
-      (* >>= fun b -> *)
-      print_endline ("B: " ^ body);
-      return (get_json_id body)
+          diagram text levels (* "55" "98" *))
+    >>= fun body ->
+    (* Cohttp_async.Body.to_string body *)
+    (* >>= fun b -> *)
+    print_endline ("B: " ^ body);
+    return (get_json_id body)
 
 
 let tail_list ls =
