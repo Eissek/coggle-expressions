@@ -207,25 +207,25 @@ let insert_replaced_data begin_index close_index original_str sub_str =
 (*    with *)
 (*      Not_found -> data *)
 
-let rec replace_spaces opening_quote closing_quote data f =
-    String.sub ~pos:opening_quote ~len:(closing_quote - 1) data
-    |> replace " " "§"
-    |> insert_replaced_data opening_quote closing_quote data
-    |> f (closing_quote + 1) (* the last param is always added from the pipe*)
-   (* with *)
-   (*   Not_found -> data *)
+(* let replace_spaces opening_quote closing_quote data f = *)
+(*     String.sub ~pos:opening_quote ~len:(closing_quote - 1) data *)
+(*     |> replace " " "§" *)
+(*     |> insert_replaced_data opening_quote closing_quote data *)
+(*     |> f (closing_quote + 1) (\* the last param is always added from the pipe*\) *)
+(*    (\* with *\) *)
+(*    (\*   Not_found -> data *\) *)
 
-let rec find_quotes index data =
-  try
-    match (String.index_from data index '"') with
-    | None -> data
-    | Some x ->
-      (match (String.index_from data (x + 1) '"') with
-      | None -> data
-      | Some y -> replace_spaces x y data find_quotes)
-  with
-  (* | Invalid_argument s -> data *)
-  | Not_found -> data
+(* let rec find_quotes index data = *)
+(*   try *)
+(*     match (String.index_from data index '"') with *)
+(*     | None -> data *)
+(*     | Some x -> *)
+(*       (match (String.index_from data (x + 1) '"') with *)
+(*       | None -> data *)
+(*       | Some y -> replace_spaces x y data find_quotes) *)
+(*   with *)
+(*   (\* | Invalid_argument s -> data *\) *)
+(*   | Not_found -> data *)
 
 let data_from_file = ref ""
 
