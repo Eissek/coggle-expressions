@@ -41,12 +41,6 @@ let new_diagram title =
   >>= fun b -> print_endline ("Diagram: " ^ b);
   (* return body *)
   return b
-  (* >>= fun data -> print_endline data; *)
-  (* return data *)
-
-
-(* let input_data_commandline *)
-(* let parse data = *)
 
 
 let get_all_nodes diagram =
@@ -64,27 +58,6 @@ let get_json_id data =
   let open Yojson.Basic.Util in
   json |> member "_id" |> to_string
 
-
-(* let add_branch parent text x y = *)
-(*   let uri = Uri.of_string *)
-(*       ("https://coggle.it/api/1/diagrams/" ^ parent ^ "/nodes") in *)
-(*   let js = `Assoc [ ("x", `String "12"); ("y", `String "43") ] in *)
-(*   Cohttp_async.Client.post_form *)
-(*     ~params: [("access_token", [!tkn]); *)
-(*               ("offset",  ["[x: 5, y: 4]"]); *)
-(*               (\* ("offset",  [("x", x) ("y", y)]) *\) *)
-(*               (\* ("x", [x]); *\) *)
-(*               (\* ("y", [y]); *\) *)
-(*               ("text", [text]); *)
-(*               ("parent", [parent])] *)
-(*     uri *)
-(*       >>= fun (_, body) -> *)
-(*       Cohttp_async.Body.to_string body *)
-(*       >>= fun b -> print_endline b; *)
-(*       return body *)
-
-
-(* Cohttp_async.Body.of_string *)
 
 let generate_position level =
   (* Random.self_init (); *)
@@ -109,24 +82,6 @@ let add_branch parent diagram text levels (* x y *) =
     >>= fun b -> print_endline b;
     (* return body *)
     return b
-
-(* Yojson.Basic. *)
-
-(* let add_branch parent text x y = *)
-(*   let uri = Uri.of_string *)
-(*       ("https://coggle.it/api/1/diagrams/:diagram/nodes?access_token=" ^ !tkn ^ "&parent=" ^ parent) in *)
-(*   Cohttp_async.Client.post_form *)
-(*     ~params: [(\* ("access_token", [!tkn]); *\) *)
-(*               ("x", [x]); *)
-(*               ("y", [y]); *)
-(*               ("text", [text]); *)
-(*               (\* ("parent", [parent]) *\)] *)
-(*     uri *)
-(*       >>= fun (_, body) -> *)
-(*       Cohttp_async.Body.to_string body *)
-(*       >>= fun b -> print_endline b; *)
-(*       return body *)
-
 
 
 let parse_token str =
@@ -180,21 +135,21 @@ let get_node_resource_id id =
   |> get_json_id
 
 
-let insert_replaced_data begin_index close_index original_str sub_str =
-  match (begin_index > 0) with
-  | true ->
-    let before = Str.string_before original_str begin_index in
-    if close_index < (String.length original_str - 1) then
-      let after = Str.string_after original_str close_index in
-      String.concat [before; sub_str; after]
-    else (* reach the last index e.g. the end of the string *)
-      String.concat [before; sub_str]
-  | false -> (* starts at the very first index so nothing before it*)
-    if close_index < (String.length original_str - 1) then
-      let after = Str.string_after original_str close_index in
-      String.concat [sub_str; after]
-    else
-      sub_str
+(* let insert_replaced_data begin_index close_index original_str sub_str = *)
+(*   match (begin_index > 0) with *)
+(*   | true -> *)
+(*     let before = Str.string_before original_str begin_index in *)
+(*     if close_index < (String.length original_str - 1) then *)
+(*       let after = Str.string_after original_str close_index in *)
+(*       String.concat [before; sub_str; after] *)
+(*     else (\* reach the last index e.g. the end of the string *\) *)
+(*       String.concat [before; sub_str] *)
+(*   | false -> (\* starts at the very first index so nothing before it*\) *)
+(*     if close_index < (String.length original_str - 1) then *)
+(*       let after = Str.string_after original_str close_index in *)
+(*       String.concat [sub_str; after] *)
+(*     else *)
+(*       sub_str *)
 
 (* let rec replace_spaces index data = *)
 (*   try *)
@@ -278,7 +233,7 @@ let branch_id_table = Hashtbl.create 30
 exception Diagram_id_not_found
 
 
-let new_branch counter (* parent *) (* diagram *) text levels token_count =
+let new_branch (* counter *) (* parent *) (* diagram *) text levels token_count =
   print_endline "NEW BRANCH";
   print_int token_count;
   if token_count = 1 then
@@ -301,13 +256,6 @@ let new_branch counter (* parent *) (* diagram *) text levels token_count =
       (* >>= fun b -> *)
       print_endline ("B: " ^ body);
       return (get_json_id body)
-         (* return b *)
-(* >>= fun str_b -> (\* return (get_json_id str_b) *\) *)
-(* match Deferred.peek (Cohttp_async.Body.to_string body) with *)
-(* | None -> "" *)
-(* | Some x -> get_json_id x *)
-(* after this need to store the id returned *)
-(* |> get_json_id  *)
 
 
 let tail_list ls =
@@ -316,31 +264,7 @@ let tail_list ls =
   | Some l -> l
 
 exception Syntax_incorrect
-(* let read_tokens tokens levels_count itr_count f = *)
-(*   match (List.hd tokens) with *)
-(*   | Some ")" -> if itr_count = 0 *)
-(*     then raise (Syntax_incorrect) *)
-(*       (\* print_endline "Syntax error unexpect )" *\) *)
-(*     else let tail = tail_list tokens in *)
-(*       let levels = levels_count - 1 in (\* minus count for closed paren *\) *)
-(*       Hashtbl.remove branch_id_table levels_count; (\* id is no longer needed *\) *)
-(*       f tail levels (itr_count + 1) *)
-(*   | Some "(" -> *)
-(*     let tail = tail_list tokens in *)
-(*     let levels = levels_count + 1 in *)
-(*     f tail levels (itr_count + 1) *)
-(*   | Some token -> *)
-(*     let diagram = match !diagram_node_id with *)
-(*       | Some id -> id *)
-(*       | None -> raise (Diagram_not_found ) in *)
-(*     new_branch itr_count diagram token levels_count *)
-(*       |> fun x -> (\* print_endline "hshs" *\) x *)
-(*     (\* >>= fun x -> return (Hashtbl.add branch_id_table levels_count x) *\) *)
-(*       (\* print_endline "hshs" *\) *)
-(*     (\* >>| fun _ -> "jjsjs" *\) *)
-(*     (\* |> fun _ -> return "hshs" *\) *)
-(*     (\* >>= fun _ -> print_endline "hshs" *\) *)
-(*   | None -> raise (Syntax_incorrect) (\* print_endline "nothing" *\) *)
+
 
 let get_x d = match (Deferred.peek d) with
   | None -> " "
@@ -378,7 +302,7 @@ let read_tokens tokens levels_count itr_count f tkn_count =
     (*   | None -> raise (Diagram_not_found ) *)
     (* in *) (* probably not needed as new_branch creates new diagram *)
     print_int itr_count;
-    new_branch itr_count (* !diagram_node_id *) token levels_count (tkn_count + 1)
+    new_branch (* itr_count *) (* !diagram_node_id *) token levels_count (tkn_count + 1)
     (* |> get_def *)
     (* |> fun x -> *)
     >>= fun x ->
@@ -400,7 +324,7 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
       (* return (Some "Parse Completed.") *) (* return "" *)
   (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
   (* | first :: rest -> print_endline "hww" *)
-  | tk_list -> read_tokens tokens levels_count itr_count tokens_parser tkn_count
+  | (* tk_list *) _ -> read_tokens tokens levels_count itr_count tokens_parser tkn_count
 
 let get_coggle_token code =
   let headers = (Cohttp.Header.of_list create_auth) in
@@ -423,23 +347,6 @@ let get_coggle_token code =
     tkn := tk;
     print_endline ("set: " ^ !tkn);
     tk
-    (* new_diagram "testing" (\* make change here *\) *)
-    (* >>= fun (diagram_data) -> *)
-
-
-    
-    (* let diagram_id = get_json_id diagram_data in (\* returns string id *\) *)
-    (* get_all_nodes diagram_id *)
-    (* >>= fun nodes -> *)
-    (* (\* print_endline ("MY NODES: " ^ nodes); *\) *)
-    (* String.slice nodes 1 (String.length nodes - 1) *)
-    (* |> get_json_id *)
-
-    
-    (* let diagram_id = handle_diagram_id diagram_data in *)
-    (* get_node_resource_id diagram_id *)
-    (* >>= fun id -> *)
-    (* add_branch id diagram_id "does this work" "32" "10" *)
 
 
 
@@ -482,7 +389,7 @@ let start_server port filename () =
   eprintf "Try 'curl http://localhost:%d/coggle?code=xyz'\n%!" port;
   print_endline "Enter the following url to your browser:";
   print_endline "https://coggle.it/dialog/authorize?response_type=code&scope=read write&client_id=5748885591ce2c8246852e66&redirect_uri=http://localhost:8080/coggle";
-  let param = ref false in
+  (* let param = ref false in *)
   let inet_addr = ref None in
   Cohttp_async.Server.create ~on_handler_error:`Raise
     (Tcp.on_port port)
@@ -499,7 +406,7 @@ let start_server port filename () =
            |> (fun _ ->
              match !inet_addr with
              | None -> Server.respond_with_string "inet address not found"
-             | Some y -> (* Cohttp_async.Server.close y *)
+             | _ (* Some y *) -> (* Cohttp_async.Server.close y *)
                          (* |> fun _ -> *)
                          print_endline "Received Authorization code";
                          print_endline "Closing server";
