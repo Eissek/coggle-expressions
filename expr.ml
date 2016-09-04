@@ -61,7 +61,7 @@ let get_json_id data =
 
 let generate_position level rand =
   (* Random.self_init (); *)
-  (level * 20) + Random.int rand
+  (level * Random.int 20 (* 20 *)) + Random.int rand
 
 let add_branch parent diagram text levels (* x y *) =
   let headers = Cohttp.Header.of_list [("content-type", "application/json")] in
