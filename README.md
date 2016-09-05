@@ -18,8 +18,9 @@ Branches are created by surrounding text in opening and closing parentheses e.g.
 For example the following would generate a diagram with the name "Sports":
 ` ("Sports") ` 
 The above would create a simple diagram with no branches.
-**All forms of text must be surrounded in quotations.**
-To add a branch to above we must again use the parentheses (). But this time we place it inside like so:
+**All forms of text must be surrounded in quotations.**  
+To add a branch to above we must again use the parentheses ().
+But this time we place it inside like so:  
 ` ("Sports" ("Football")) `  
 So now the diagram will have a branch leading to football
 
