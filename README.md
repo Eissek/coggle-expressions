@@ -39,7 +39,7 @@ Copy and paste the code below into a text file and save as "music_diagram.txt":
 Now open up a terminal and run `./expr.native music_diagram.txt`  And follow the instructions.
 
 You should get something similar to the following on your coggle account:  
-![Image of Coggle Music Diagram ] (https://github.com/Eissek/coggle-expressions/blob/master/sc/diagram_result.png)
+![Image of Coggle Music Diagram ] (https://github.com/Eissek/coggle-expressions/blob/master/sc/music_diagram2.png)
 
 
 
