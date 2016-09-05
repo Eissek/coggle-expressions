@@ -22,7 +22,10 @@ The above would create a simple diagram with no branches.
 To add a branch to above we must again use the parentheses ().
 But this time we place it inside like so:  
 ` ("Sports" ("Football")) `  
-So now the diagram will have a branch leading to football
+So now the diagram will have a branch leading to football.
+
+The first string of words will always be the diagram name. For example:  ` ("Favourite Fruits" ("Apple") ("Oranges") ("Grapes")) `
+"Favourite Fruits " will be the name of the diagram.
 
 #### Example
 Copy and paste the code below into a text file and save as "music_diagram.txt":  
