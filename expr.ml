@@ -204,7 +204,7 @@ let concat_remaining last_index len replaced_data =
   | true -> (* replaced_data ^ (Str.string_after !data_from_file last_index) *)
     String.concat [replaced_data; (Str.string_after !data_from_file last_index)]
 (* "§" *)
-let transperse_data data =
+let transverse_data data =
   let rec find_string_in_data start last count replaced_data =
     let len = String.length !data_from_file in
     match (String.index_from data start '"') with
@@ -415,8 +415,9 @@ let start_server port filename () =
        | "/coggle" ->
          (* extract req *)
          In_channel.read_all filename
-         |> transperse_data
+         |> transverse_data
          |> tokenize
+         |> List.filter ~f:(fun x -> x <> "\n")
          |> List.map ~f:(fun current -> replace  "§" " " current)
          |> init req (* test_c *)
            |> (fun _ ->
