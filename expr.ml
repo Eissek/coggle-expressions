@@ -29,6 +29,7 @@ let get_secret  = In_channel.read_all "../moonlandings.txt"
                     |> String.strip
 
 let tkn = ref ""
+let inet_addr = ref None
 
 let new_diagram title =
   let uri = Uri.of_string "https://coggle.it/api/1/diagrams" in
@@ -335,7 +336,7 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
       (* None here indicates tokens have successfully been pasrsed *)
       (* And the branches should have been created using read_tokens *)
       print_endline "Diagram created successfully";
-      return None
+    (* return None *) exit 0
       (* return (Some "Parse Completed.") *) (* return "" *)
   (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
   (* | first :: rest -> print_endline "hww" *)
@@ -393,7 +394,7 @@ let init req tokens =
   | None -> raise (Code_not_found )
   | Some code ->
     get_coggle_token code
-    >>= fun _ -> tokens_parser tokens 0 0 0 (* test_c 0 0 0 *)
+    >>| fun _ -> tokens_parser tokens 0 0 0 (* test_c 0 0 0 *)
     (* |> store_node_id *)
 (* fun x -> match x with *)
     (* | None -> raise (No_levels_or_id_returned) *)
@@ -405,7 +406,7 @@ let start_server port filename () =
   print_endline "Enter the following url to your browser:";
   print_endline "https://coggle.it/dialog/authorize?response_type=code&scope=read write&client_id=5748885591ce2c8246852e66&redirect_uri=http://localhost:8080/coggle";
   (* let param = ref false in *)
-  let inet_addr = ref None in
+  (* let inet_addr = ref None in *)
   Cohttp_async.Server.create ~on_handler_error:`Raise
     (Tcp.on_port port)
     (fun ~body: _ _sock req ->
@@ -419,20 +420,24 @@ let start_server port filename () =
          |> List.filter ~f:(fun x -> x <> "\n")
          |> List.map ~f:(fun current -> replace  "§" " " current)
          |> init req (* test_c *)
-           |> (fun _ ->
+         |> (fun _ ->
              match !inet_addr with
              | None -> Server.respond_with_string "inet address not found"
-             | _ (* Some y *) -> (* Cohttp_async.Server.close y *)
-                         (* |> fun _ -> *)
-                         print_endline "Received Authorization code";
-                         print_endline "Closing server";
-                         Server.respond_with_string "Received Authorization code \n")
+             | (* _ *) Some y ->
+               Server.close y
+               (* Cohttp_async.Server.close y *)
+               |> fun _ ->
+               print_endline "Received Authorization code";
+               print_endline "Closing server";
+               Server.respond_with_string "Received Authorization code \n"
+               (* fun _ -> print_endline "hshs" *)
+               (* (Cohttp_async.Server.close y) *))
        | _ -> Server.respond_with_string ~code:`Not_found "Route not found\n"
     )
-  >>= fun addr -> let set_inet =
-                    inet_addr := Some addr
-  in Deferred.never
-    set_inet
+  >>= (fun addr -> let set_inet =
+                     inet_addr := Some addr;
+        in Deferred.never
+          set_inet)
 
 
 let () =
