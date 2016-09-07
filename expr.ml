@@ -91,7 +91,7 @@ let add_branch parent diagram text levels (* x y *) =
     uri
     >>= fun (_, body) ->
     Cohttp_async.Body.to_string body
-    >>= fun b -> print_endline b;
+    >>= fun b -> (* print_endline b; *)
     (* return body *)
     return b
 
@@ -247,7 +247,7 @@ exception Diagram_id_not_found
 
 let new_branch (* counter *) (* parent *) (* diagram *) text levels token_count =
   print_endline "NEW BRANCH";
-  print_int token_count;
+  (* print_int token_count; *)
   if token_count = 1 then
     new_diagram text
     >>= fun data ->
@@ -263,8 +263,8 @@ let new_branch (* counter *) (* parent *) (* diagram *) text levels token_count 
       add_branch (Hashtbl.find branch_id_table levels)
         diagram text levels (* "55" "98" *)
     | Some diagram ->
-      print_endline "HEEEEEEEElp";
-      print_int (levels - 1);
+      (* print_endline "HEEEEEEEElp"; *)
+      (* print_int (levels - 1); *)
       add_branch (Hashtbl.find branch_id_table (levels - 1))
           diagram text levels (* "55" "98" *))
     >>= fun body ->
@@ -317,10 +317,8 @@ let read_tokens tokens levels_count itr_count f tkn_count =
     (*   | Some id -> id *)
     (*   | None -> raise (Diagram_not_found ) *)
     (* in *) (* probably not needed as new_branch creates new diagram *)
-    print_int itr_count;
+    (* print_int itr_count; *)
     new_branch (* itr_count *) (* !diagram_node_id *) token levels_count (tkn_count + 1)
-    (* |> get_def *)
-    (* |> fun x -> *)
     >>= fun x ->
     store_node_id (Some (levels_count, x))
     |> fun _ -> f (tail_list tokens) levels_count (itr_count + 1) (tkn_count + 1)
@@ -336,6 +334,7 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
     else
       (* None here indicates tokens have successfully been pasrsed *)
       (* And the branches should have been created using read_tokens *)
+      print_endline "Diagram created successfully";
       return None
       (* return (Some "Parse Completed.") *) (* return "" *)
   (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
@@ -382,10 +381,10 @@ let extract req =
   | None -> None
 
 
+(* let test_c = ["("; "begin"; "("; "2nd"; "("; "2.2"; ")"; ")"; *)
+(*               "("; "3rd"; ")"; ")"] *)
 
 
-let test_c = ["("; "begin"; "("; "2nd"; "("; "2.2"; ")"; ")";
-              "("; "3rd"; ")"; ")"]
 let init req tokens =
   Random.self_init ();
   extract req
