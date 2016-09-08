@@ -60,9 +60,17 @@ let get_json_id data =
   json |> member "_id" |> to_string
 
 
+(* let generate_position level rand = *)
+(*   (\* Random.self_init (); *\) *)
+(*   (level * Random.int 26 (\* 20 *\)) + Random.int rand *)
+
 let generate_position level rand =
-  (* Random.self_init (); *)
-  (level * Random.int 26 (* 20 *)) + Random.int rand
+  let x = Random.int rand in
+  match level with
+  | 1 -> if x mod 2 = 0 then x * -15 else x
+  | _ -> if x mod 2 = 0 then Random.int 16 * (-x)
+    else
+    ((* level *  *)Random.int 16) * x
 
 (* let generate_position level rand = *)
 (*   (level * (let r = Random.int 20 in *)
@@ -82,7 +90,7 @@ let add_branch parent diagram text levels (* x y *) =
       ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn)
   in
   let data  = `Assoc [(* ("offset", `Assoc [("x", `Int 100); ("y", `Int 70)]); *)
-                      ("offset", `Assoc [("x", `Int (generate_position levels 60)); ("y", `Int (generate_position levels 40))]);
+                      ("offset", `Assoc [("x", `Int (generate_position levels 25)); ("y", `Int (generate_position levels 20))]);
                       ("text", `String text);
                       ("parent", `String parent)] in
   let main_body = Cohttp_async.Body.of_string (Yojson.Basic.to_string data)  in
@@ -423,12 +431,11 @@ let start_server port filename () =
          |> (fun _ ->
              match !inet_addr with
              | None -> Server.respond_with_string "inet address not found"
-             | (* _ *) Some y ->
-               Server.close y
+             | _ (* Some y *) ->
                (* Cohttp_async.Server.close y *)
-               |> fun _ ->
-               print_endline "Received Authorization code";
-               print_endline "Closing server";
+               (* |> fun _ -> *)
+               (* print_endline "Received Authorization code"; *)
+               (* print_endline "Closing server"; *)
                Server.respond_with_string "Received Authorization code \n"
                (* fun _ -> print_endline "hshs" *)
                (* (Cohttp_async.Server.close y) *))
