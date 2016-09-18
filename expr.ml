@@ -5,7 +5,7 @@ open Async_ssl.Std
 open Sexplib.Std
 (* open Yojson *)
 (* open Cohttp_lwt_unix *)
-open Str
+(* open Str *)
 
 
 (* let response_handler code = *)
