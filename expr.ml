@@ -22,111 +22,8 @@ exception Diagram_not_found
 exception Code_not_found
 exception Deferred_is_None
 
-
-
-let get_id = "5748885591ce2c8246852e66"
-let get_secret  = In_channel.read_all "../moonlandings.txt"
-                    |> String.strip
-
 let tkn = ref ""
 let inet_addr = ref None
-
-let new_diagram title =
-  let uri = Uri.of_string "https://coggle.it/api/1/diagrams" in
-  Cohttp_async.Client.post_form
-    ~params: [("access_token", [!tkn]);
-              ("title", [title])]
-    uri
-  >>= fun (_, body) ->
-  Cohttp_async.Body.to_string body
-  >>= fun b -> print_endline ("Diagram: " ^ b);
-  (* return body *)
-  return b
-
-
-let get_all_nodes diagram =
-  let uri = Uri.of_string ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn) in
-  Cohttp_async.Client.get uri
-    >>= fun (_, body) ->
-    Cohttp_async.Body.to_string body
-    >>= fun b ->
-    print_endline ("NODES: " ^ b);
-    return b
-    (* return body (\* was body *\) *)
-
-let get_json_id data =
-  let json = Yojson.Basic.from_string data in
-  let open Yojson.Basic.Util in
-  json |> member "_id" |> to_string
-
-
-(* let generate_position level rand = *)
-(*   (\* Random.self_init (); *\) *)
-(*   (level * Random.int 26 (\* 20 *\)) + Random.int rand *)
-
-let generate_position level rand =
-  let x = Random.int rand in
-  match level with
-  | 1 -> if x mod 2 = 0 then x * -15 else x
-  | _ -> if x mod 2 = 0 then Random.int 16 * (-x)
-    else
-    ((* level *  *)Random.int 16) * x
-
-(* let generate_position level rand = *)
-(*   (level * (let r = Random.int 20 in *)
-(*             match r mod 2 with *)
-(*             | 0 -> r *)
-(*             | _ -> r * -1)) + Random.int rand *)
-
-(* let generate_position level rand = *)
-(*   ((match level mod 2 with *)
-(*     | 0 -> level *)
-(*     | _ -> level * -3) *)
-(*   * Random.int 20) + Random.int rand *)
-
-let add_branch parent diagram text levels (* x y *) =
-  let headers = Cohttp.Header.of_list [("content-type", "application/json")] in
-  let uri = Uri.of_string
-      ("https://coggle.it/api/1/diagrams/" ^ diagram ^ "/nodes?access_token=" ^ !tkn)
-  in
-  let data  = `Assoc [(* ("offset", `Assoc [("x", `Int 100); ("y", `Int 70)]); *)
-                      ("offset", `Assoc [("x", `Int (generate_position levels 25)); ("y", `Int (generate_position levels 20))]);
-                      ("text", `String text);
-                      ("parent", `String parent)] in
-  let main_body = Cohttp_async.Body.of_string (Yojson.Basic.to_string data)  in
-  Cohttp_async.Client.post
-    ~headers: headers
-    ~body:main_body
-    uri
-    >>= fun (_, body) ->
-    Cohttp_async.Body.to_string body
-    >>= fun b -> (* print_endline b; *)
-    (* return body *)
-    return b
-
-
-let parse_token str =
-  let json = Yojson.Basic.from_string str in
-  let open Yojson.Basic.Util in
-  let tkn = json |> member "access_token" |> to_string in
-  (* print_endline ("Tkn: " ^ tkn) *)
-  (* printf "Tkn: %s\n" tkn *)
-  tkn
-
-
-let create_auth =
-  let client_id = "5748885591ce2c8246852e66" in
-  let auth = client_id ^ ":" ^ get_secret in
-  let enc = B64.encode auth in
-  let auth_headers = ["Authorization", "Basic " ^ enc] in
-  auth_headers
-
-let generate_uri code =
-  let uri = Uri.of_string "https://coggle.it/token" in
-  Uri.add_query_params uri[
-    ("code", [code]);
-    ("grant_type", ["authorization_code"]);
-    ("redirect_uri", ["http://localhost:8080/coggle"])]
 
 let replace old _new str  =
   Str.global_replace (Str.regexp old) _new str
@@ -138,22 +35,8 @@ let tokenize code =
   |> fun x -> String.split x ~on: ' '
               |> fun l -> List.filter l (fun s -> s <> "")
 
-let diagram_node_id = ref None
 
-let handle_diagram_id data = (* Maybe check diagram ref is not set first*)
-  match !diagram_node_id with
-  | None ->
-    get_json_id data
-    |> fun id -> diagram_node_id := Some id;
-    id
-  | Some x -> x
-  (* !diagram_id *)
 
-let get_node_resource_id id =
-  get_all_nodes id
-  >>| fun nodes ->
-  String.slice nodes 1 (String.length nodes - 1)
-  |> get_json_id
 
 
 (* let insert_replaced_data begin_index close_index original_str sub_str = *)
@@ -248,39 +131,11 @@ let transverse_data data =
 (*     | ")" -> failwith "Unexpected )" *)
 (*     | _ -> *)
 
-let branch_id_table = Hashtbl.create 30
+
 (* let t = Hashtbl.add branch_id_table 1 "hy" *)
 
-exception Diagram_id_not_found
 
 
-let new_branch (* counter *) (* parent *) (* diagram *) text levels token_count =
-  print_endline "NEW BRANCH";
-  (* print_int token_count; *)
-  if token_count = 1 then
-    new_diagram text
-    >>= fun data ->
-    print_endline "NEW DIAGRAM";
-    (* print_endline data; *)
-    let diagram_id = handle_diagram_id data in
-    get_node_resource_id diagram_id
-  else
-    (match !diagram_node_id with
-    | None ->
-      raise Diagram_id_not_found
-    | Some diagram when levels = 1 ->
-      add_branch (Hashtbl.find branch_id_table levels)
-        diagram text levels (* "55" "98" *)
-    | Some diagram ->
-      (* print_endline "HEEEEEEEElp"; *)
-      (* print_int (levels - 1); *)
-      add_branch (Hashtbl.find branch_id_table (levels - 1))
-          diagram text levels (* "55" "98" *))
-    >>= fun body ->
-    (* Cohttp_async.Body.to_string body *)
-    (* >>= fun b -> *)
-    print_endline ("B: " ^ body);
-    return (get_json_id body)
 
 
 let tail_list ls =
@@ -291,13 +146,13 @@ let tail_list ls =
 exception Syntax_incorrect
 
 
-let get_x d = match (Deferred.peek d) with
-  | None -> " "
-  | Some x -> x
+(* let get_x d = match (Deferred.peek d) with *)
+(*   | None -> " " *)
+(*   | Some x -> x *)
 
-let get_def x = match Deferred.peek x with
-  | None -> raise (Deferred_is_None)
-  | Some y -> y
+(* let get_def x = match Deferred.peek x with *)
+(*   | None -> raise (Deferred_is_None) *)
+(*   | Some y -> y *)
 
 exception No_levels_or_id_returned
 
@@ -305,7 +160,7 @@ let store_node_id id =
   (* id param is a tuple *)
     match id with
     | None -> raise (No_levels_or_id_returned)
-    | Some (x, y) -> Hashtbl.add branch_id_table x y;
+    | Some (x, y) -> Hashtbl.add Diagram.branch_id_table x y;
      Some x
 
 let read_tokens tokens levels_count itr_count f tkn_count =
@@ -315,7 +170,7 @@ let read_tokens tokens levels_count itr_count f tkn_count =
     (* print_endline "Syntax error unexpect )" *)
     else let tail = tail_list tokens in
       let levels = levels_count - 1 in (* minus count for closed paren *)
-      Hashtbl.remove branch_id_table levels_count; (* id is no longer needed *)
+      Hashtbl.remove Diagram.branch_id_table levels_count; (* id is no longer needed *)
       f tail levels (itr_count + 1) tkn_count
   | Some "(" ->
     let tail = tail_list tokens in
@@ -327,7 +182,7 @@ let read_tokens tokens levels_count itr_count f tkn_count =
     (*   | None -> raise (Diagram_not_found ) *)
     (* in *) (* probably not needed as new_branch creates new diagram *)
     (* print_int itr_count; *)
-    new_branch (* itr_count *) (* !diagram_node_id *) token levels_count (tkn_count + 1)
+    Diagram.new_branch (* itr_count *) (* !diagram_node_id *) token levels_count (tkn_count + 1) !tkn
     >>= fun x ->
     store_node_id (Some (levels_count, x))
     |> fun _ -> f (tail_list tokens) levels_count (itr_count + 1) (tkn_count + 1)
@@ -351,7 +206,7 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
   | (* tk_list *) _ -> read_tokens tokens levels_count itr_count tokens_parser tkn_count
 
 let get_coggle_token code =
-  let headers = (Cohttp.Header.of_list create_auth) in
+  let headers = (Cohttp.Header.of_list Token.create_auth) in
   Cohttp_async.Client.post_form
     ~headers: headers
     ~params:[("code", [code]);
@@ -363,7 +218,7 @@ let get_coggle_token code =
     >>| fun b -> (* changed from >>= *)
     (* printf "yup:  %s\n" b; *)
     (* parse_token b |> print_endline; *)
-    parse_token b
+    Token.parse_token b
     (* |> fun x ->  match (Deferred.peek x) with *)
     (* | None -> "" *)
     (* | Some d -> d *)
