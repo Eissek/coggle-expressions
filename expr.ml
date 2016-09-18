@@ -1,6 +1,6 @@
 open Core.Std
 open Async.Std
-open Cohttp_async
+(* open Cohttp_async *)
 open Async_ssl.Std
 open Sexplib.Std
 (* open Yojson *)
@@ -430,16 +430,16 @@ let start_server port filename () =
          |> init req (* test_c *)
          |> (fun _ ->
              match !inet_addr with
-             | None -> Server.respond_with_string "inet address not found"
+             | None -> Cohttp_async.Server.respond_with_string "inet address not found"
              | _ (* Some y *) ->
                (* Cohttp_async.Server.close y *)
                (* |> fun _ -> *)
                (* print_endline "Received Authorization code"; *)
                (* print_endline "Closing server"; *)
-               Server.respond_with_string "Received Authorization code \n"
+               Cohttp_async.Server.respond_with_string "Received Authorization code \n"
                (* fun _ -> print_endline "hshs" *)
                (* (Cohttp_async.Server.close y) *))
-       | _ -> Server.respond_with_string ~code:`Not_found "Route not found\n"
+       | _ -> Cohttp_async.Server.respond_with_string ~code:`Not_found "Route not found\n"
     )
   >>= (fun addr -> let set_inet =
                      inet_addr := Some addr;
