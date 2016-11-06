@@ -190,13 +190,15 @@ let read_tokens tokens levels_count itr_count f tkn_count =
   (* |> fun x -> (Some x) *)
   | None -> raise (Syntax_incorrect) (* print_endline "nothing" *)
 
+
+
 exception Token_not_found
 let rec tokens_parser tokens levels_count itr_count tkn_count =
   match tokens with
   | [] -> if itr_count = 0
     then raise (Token_not_found)
     else
-      (* None here indicates tokens have successfully been pasrsed *)
+      (* None here indicates tokens have successfully been parsed *)
       (* And the branches should have been created using read_tokens *)
       print_endline "Diagram created successfully";
     (* return None *) exit 0
@@ -204,6 +206,8 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
   (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
   (* | first :: rest -> print_endline "hww" *)
   | (* tk_list *) _ -> read_tokens tokens levels_count itr_count tokens_parser tkn_count
+
+
 
 let get_coggle_token code =
   let headers = (Cohttp.Header.of_list Token.create_auth) in
@@ -228,7 +232,8 @@ let get_coggle_token code =
     tk
 
 
-
+(* Extracts coggle authorization code  *)
+(* Used for interacting with coggle api *)
 let extract req =
   let uri = Cohttp.Request.uri req in
   match Uri.get_query_param uri "code" with
@@ -249,6 +254,8 @@ let extract req =
 (*               "("; "3rd"; ")"; ")"] *)
 
 
+(* Initiates Coggle interaction by getting Autorization code *)
+(* And then get coggle token *)
 let init req tokens =
   Random.self_init ();
   extract req
