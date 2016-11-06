@@ -88,6 +88,8 @@ let tokenize code =
 
 let data_from_file = ref ""
 
+(* Concatenates the rest of the data
+   if there is no matching double quote found *)
 let concat_remaining last_index len replaced_data =
   match (last_index < (len - 1)) with
   | false -> replaced_data
@@ -96,6 +98,13 @@ let concat_remaining last_index len replaced_data =
   | true -> (* replaced_data ^ (Str.string_after !data_from_file last_index) *)
     String.concat [replaced_data; (Str.string_after !data_from_file last_index)]
 (* "§" *)
+
+
+(* Tranverserses data for strings *)
+(* and replaces spaces in string with unique character *)
+(* Does this by finding matching double quotes "" *)
+(* then replaces the spaces between them *)
+(* Also concatenates to previously transversed strings  *)
 let transverse_data data =
   let rec find_string_in_data start last count replaced_data =
     let len = String.length !data_from_file in
@@ -107,8 +116,12 @@ let transverse_data data =
        | Some y ->
          let last_start_difference = (y-x) + 1 in
          let fill_space = replace " " "§" (String.sub ~pos:x ~len:last_start_difference data) in
-         if x > 0 then
+         if x > 0 then (* means there is data before the found double quote
+                       so we have to concatenate it*)
            let d = (if count = 0 then
+                      (* concats the non string data from between
+                      the previous/last found double quote and the
+                      beginning of the next string. Anything between the two strings. *)
                    String.concat [(String.sub ~pos:last ~len:(x - last) data); fill_space]
                    else
                    String.concat [replaced_data; (String.sub ~pos:last ~len:(x - last) data); fill_space])
@@ -163,6 +176,14 @@ let store_node_id id =
     | Some (x, y) -> Hashtbl.add Diagram.branch_id_table x y;
      Some x
 
+(* Goes through each token *)
+(* If it encounters a opening paren "(", then it increases
+   the level by one. The level count correlates to its hierarchical position
+   E.g. level 2 would be the child of a level 1 node,
+   which would be the child of level 0*)
+(* Anything on level 1 would have the same hierarchical position *)
+(* If it encounters a closing paren ")" then it decrements the level *)
+
 let read_tokens tokens levels_count itr_count f tkn_count =
   match (List.hd tokens) with
   | Some ")" -> if itr_count = 0
@@ -192,6 +213,8 @@ let read_tokens tokens levels_count itr_count f tkn_count =
 
 
 
+(* Begins parsing and reading of the file data that we
+   initially separated and tokenized *)
 exception Token_not_found
 let rec tokens_parser tokens levels_count itr_count tkn_count =
   match tokens with
@@ -208,7 +231,7 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
   | (* tk_list *) _ -> read_tokens tokens levels_count itr_count tokens_parser tkn_count
 
 
-
+(* Retrieves temporary coggle token needed for Auth interaction *)
 let get_coggle_token code =
   let headers = (Cohttp.Header.of_list Token.create_auth) in
   Cohttp_async.Client.post_form
