@@ -100,12 +100,12 @@ let concat_remaining last_index len replaced_data =
 (* "§" *)
 
 
-(* Tranverserses data for strings *)
+(* Tranverses data for strings *)
 (* and replaces spaces in string with unique character *)
 (* Does this by finding matching double quotes "" *)
 (* then replaces the spaces between them *)
-(* Also concatenates to previously transversed strings  *)
-let transverse_data data =
+(* Also concatenates to previously traversed strings  *)
+let traverse_data data =
   let rec find_string_in_data start last count replaced_data =
     let len = String.length !data_from_file in
     match (String.index_from data start '"') with
@@ -133,40 +133,12 @@ let transverse_data data =
 
 
 
-
-(* let rec read_tokens tokens = *)
-(*   match (String.length tokens) > 0 with *)
-(*   | false -> failwith "Unexpected EOF while reading" *)
-(*   | true -> let token = List.hd tokens in *)
-(*     match token with *)
-(*     | "(" -> let l = [] in *)
-(*       while List.nth tokens 1 <> Some ")" *)
-(*     | ")" -> failwith "Unexpected )" *)
-(*     | _ -> *)
-
-
-(* let t = Hashtbl.add branch_id_table 1 "hy" *)
-
-
-
-
-
 let tail_list ls =
   match (List.tl ls) with
   | None -> []
   | Some l -> l
 
 exception Syntax_incorrect
-
-
-(* let get_x d = match (Deferred.peek d) with *)
-(*   | None -> " " *)
-(*   | Some x -> x *)
-
-(* let get_def x = match Deferred.peek x with *)
-(*   | None -> raise (Deferred_is_None) *)
-(*   | Some y -> y *)
-
 exception No_levels_or_id_returned
 
 let store_node_id id =
@@ -198,17 +170,10 @@ let read_tokens tokens levels_count itr_count f tkn_count =
     let levels = levels_count + 1 in
     f tail levels (itr_count + 1) tkn_count
   | Some token ->
-    (* let diagram = match !diagram_node_id with *)
-    (*   | Some id -> id *)
-    (*   | None -> raise (Diagram_not_found ) *)
-    (* in *) (* probably not needed as new_branch creates new diagram *)
-    (* print_int itr_count; *)
     Diagram.new_branch (* itr_count *) (* !diagram_node_id *) token levels_count (tkn_count + 1) !tkn
     >>= fun x ->
     store_node_id (Some (levels_count, x))
     |> fun _ -> f (tail_list tokens) levels_count (itr_count + 1) (tkn_count + 1)
-      (* (Some (levels_count, x)) *)
-  (* |> fun x -> (Some x) *)
   | None -> raise (Syntax_incorrect) (* print_endline "nothing" *)
 
 
@@ -224,10 +189,8 @@ let rec tokens_parser tokens levels_count itr_count tkn_count =
       (* None here indicates tokens have successfully been parsed *)
       (* And the branches should have been created using read_tokens *)
       print_endline "Diagram created successfully";
-    (* return None *) exit 0
-      (* return (Some "Parse Completed.") *) (* return "" *)
-  (* | [hd] -> print_endline "call funct" (\* should call a parser *\) *)
-  (* | first :: rest -> print_endline "hww" *)
+    (* return None *)
+    exit 0
   | (* tk_list *) _ -> read_tokens tokens levels_count itr_count tokens_parser tkn_count
 
 
@@ -244,11 +207,7 @@ let get_coggle_token code =
     Cohttp_async.Body.to_string body
     >>| fun b -> (* changed from >>= *)
     (* printf "yup:  %s\n" b; *)
-    (* parse_token b |> print_endline; *)
     Token.parse_token b
-    (* |> fun x ->  match (Deferred.peek x) with *)
-    (* | None -> "" *)
-    (* | Some d -> d *)
     |> fun tk ->
     tkn := tk;
     print_endline ("set: " ^ !tkn);
@@ -264,11 +223,6 @@ let extract req =
     if code = "" then
       None (* false *)
     else
-      (* print_endline code *)
-      (* printf "Code: %s \n" get_secret *)
-      (* get_coggle_token code *)
-      (* |> fun _ -> Some code *)
-      (* |> fun _ ->  true *)
       Some code
   | None -> None
 
@@ -288,10 +242,6 @@ let init req tokens =
   | Some code ->
     get_coggle_token code
     >>| fun _ -> tokens_parser tokens 0 0 0 (* test_c 0 0 0 *)
-    (* |> store_node_id *)
-(* fun x -> match x with *)
-    (* | None -> raise (No_levels_or_id_returned) *)
-    (* | Some (x, y) -> Hashtbl.add branch_id_table x y; x *)
 
 let start_server port filename () =
   eprintf "Listening for HTTP on port %d\n" port;
@@ -308,7 +258,7 @@ let start_server port filename () =
        | "/coggle" ->
          (* extract req *)
          In_channel.read_all filename
-         |> transverse_data
+         |> traverse_data
          |> tokenize
          |> List.filter ~f:(fun x -> x <> "\n")
          |> List.map ~f:(fun current -> replace  "§" " " current)
